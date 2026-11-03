@@ -1,0 +1,3 @@
+Pasta para publicar no GitHub Pages. Carregar TODO o conteúdo desta pasta (incluindo a pasta "fichas").
+Só código e modelos vazios — nunca colocar aqui dados de utentes.
+Ao alterar qualquer ficheiro: mudar a versão em sw.js (fisio-ipad-v1 → v2) antes de publicar.

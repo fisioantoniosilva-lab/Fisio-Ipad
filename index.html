@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Questionários">
+<meta name="theme-color" content="#0f2a3d">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Questionários · Fisioterapia</title>
+<style>
+:root{--navy:#0f2a3d;--teal:#009b94;--teal-d:#035e59;--tint:#e8f5f4;--ink:#13293d;--ink2:#35495a;--muted:#5f6f7b;--line:#d6dee3;--bg:#f4f7f8;--good:#0a7d0a;--good-b:#e3f4e3;--warn:#7a4d00;--warn-b:#fdf0d0;--crit:#a32020;--crit-b:#fbe3e3}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+button,input,label.btn{font:inherit;touch-action:manipulation}
+h1{font-size:30px;margin:0 0 8px;color:var(--navy)} h2{font-size:22px;margin:0 0 10px;color:var(--navy)}
+.muted{color:var(--muted);font-size:16px}
+.top{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;padding-top:max(12px,env(safe-area-inset-top));background:#fff;border-bottom:1px solid var(--line)}
+.wrap{max-width:980px;margin:0 auto;padding:16px 20px 40px;display:flex;flex-direction:column;gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.banner{background:var(--warn-b);color:var(--warn);border-radius:12px;padding:12px 16px;font-size:16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:6px;font-size:16px;color:var(--ink2)}
+input:not([type=checkbox]):not([type=range]){border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:20px;background:#fff;color:var(--ink);min-height:52px}
+.lbl{font-size:16px;color:var(--ink2);margin:14px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{flex-direction:row;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-height:52px;font-size:18px;color:var(--ink);background:#fff}
+.chip input{width:24px;height:24px;margin:0}
+.tag{display:inline-block;font-size:14px;border-radius:999px;padding:2px 10px;background:#e3e9ec;color:var(--ink2);white-space:nowrap}
+.tag.ok{background:var(--good-b);color:var(--good)} .tag.warn{background:var(--warn-b);color:var(--warn)}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:12px 20px;min-height:52px;font-size:18px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.perigo{color:var(--crit);border-color:#efc2c2}
+.btn.mini{min-height:40px;padding:6px 14px;font-size:15px}
+.btn.grande{min-width:170px;min-height:60px;font-size:20px}
+.btn:disabled{opacity:.4}
+.linha{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.centro{max-width:560px;margin:0 auto;padding:max(48px,env(safe-area-inset-top)) 24px 40px;display:flex;flex-direction:column;gap:12px}
+.pin{font-size:34px!important;letter-spacing:12px;text-align:center}
+.ut-top{position:sticky;top:0;display:flex;align-items:center;gap:16px;padding:12px 20px;padding-top:max(12px,env(safe-area-inset-top));background:var(--bg)}
+.prog{flex:1;height:10px;background:#dfe7ea;border-radius:999px;overflow:hidden}.prog>div{height:100%;background:var(--teal);border-radius:999px}
+.ut{max-width:860px;margin:0 auto;padding:12px 24px 48px}
+.ut h2{font-size:30px;line-height:1.3;color:var(--ink);margin:6px 0 22px}
+.ut-q{color:var(--muted);font-size:17px;margin:8px 0 0}.ut-sec{color:var(--teal-d);font-weight:600;font-size:18px;margin:10px 0 0}
+.ops{display:flex;flex-direction:column;gap:12px}
+.op{border:2px solid var(--line);background:#fff;border-radius:14px;padding:16px 20px;min-height:68px;font-size:22px;text-align:left;color:var(--ink);cursor:pointer}
+.op.on{border-color:var(--teal);background:var(--tint)}
+.vas input{width:100%;height:48px}
+.anc{display:flex;justify-content:space-between;gap:16px;font-size:18px;color:var(--ink2)} .anc b{color:var(--ink);font-size:24px}
+.lnk{background:none;border:none;color:var(--ink2);text-decoration:underline;font-size:18px;min-height:52px;cursor:pointer}
+.tab{width:100%;border-collapse:collapse;font-size:18px}.tab th{text-align:left;padding:12px 0 4px;color:var(--navy)}.tab td{padding:6px 0;border-bottom:1px solid var(--line)}.tab .num{text-align:right;font-weight:600}
+.wrap p{margin:6px 0}
+#aviso{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;border-radius:12px;padding:12px 18px;font-size:17px;max-width:90vw;z-index:9}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+input[type=range]{accent-color:var(--teal)}
+.vas input[type=range]{-webkit-appearance:none;appearance:none;height:48px;background:transparent}
+.vas input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:999px;background:#dfe7ea}
+.vas input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:40px;height:40px;margin-top:-15px;border-radius:50%;background:var(--teal);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+
+</style>
+</head>
+<body>
+<div id="app"><div class="centro" style="max-width:560px;margin:60px auto;padding:0 20px;font-family:-apple-system,system-ui,sans-serif;line-height:1.45;color:#13293d"><h1 style="font-size:22px">Questionários · Fisioterapia</h1><p id="aviso-arranque">A abrir…</p><p style="color:#4a5d6b;font-size:15px">Se esta mensagem não desaparecer em poucos segundos, a app não arrancou. Abra-a no <b>Safari</b> pelo endereço <b>fisioantoniosilva-lab.github.io/questionarios-fisio</b> (não pelo ficheiro guardado no iPad) e confirme que tem internet na primeira abertura.</p></div></div>
+<div id="aviso" role="status" hidden></div>
+<script>window.addEventListener('error', function(e){ var el = document.getElementById('aviso-arranque'); if(el) el.textContent = 'Erro ao abrir a app: ' + (e && e.message ? e.message : 'desconhecido') + '. Envie uma captura deste ecrã ao fisioterapeuta responsável pela app.'; });</script>
+<script>
+"use strict";
+
+/* ===================== Questionários: definições, textos e cotação (comum ao Mac e ao iPad) ===================== */
+const QD = {
+  koos:   {reg:'jo', nome:'KOOS',    n:42, tipo:'likert', nop:5},
+  lefs:   {reg:'jo', regs:['jo','an'], nome:'LEFS',    n:20, tipo:'likert', nop:5},
+  faos:   {reg:'tz', nome:'FAOS',    n:42, tipo:'likert', nop:5},
+  faam:   {reg:'tz', nome:'FAAM',    n:29, tipo:'likert', nop:6},
+  wosi:   {reg:'om', nome:'WOSI',    n:21, tipo:'vas100'},
+  dash:   {reg:'om', nome:'DASH',    n:30, tipo:'likert', nop:5},
+  hoos:   {reg:'an', nome:'HOOS',    n:40, tipo:'likert', nop:5},
+  nahs:   {reg:'an', nome:'NAHS',    n:20, tipo:'likert', nop:5},
+  tsk:    {reg:'*',  nome:'TSK-13',  n:13, tipo:'likert', nop:4},
+  pgic:   {reg:'*',  nome:'PGIC',    n:1,  tipo:'likert', nop:7, reav:true}
+};
+/* pontuações apresentadas sem casas decimais */
+const PROM_INT = ['wosi', 'lefs', 'tsk', 'pgic'];
+const COD = {
+  koos: [...[1,2,3,4,5,6,7].map(i => 'S' + i), ...[1,2,3,4,5,6,7,8,9].map(i => 'P' + i), ...Array.from({length:17}, (_, i) => 'A' + (i+1)), ...[1,2,3,4,5].map(i => 'SP' + i), ...[1,2,3,4].map(i => 'Q' + i)],
+  lefs: Array.from({length:20}, (_, i) => String(i+1)),
+  faos: [...[1,2,3,4,5,6,7].map(i => 'S' + i), ...[1,2,3,4,5,6,7,8,9].map(i => 'P' + i), ...Array.from({length:17}, (_, i) => 'A' + (i+1)), ...[1,2,3,4,5].map(i => 'SP' + i), ...[1,2,3,4].map(i => 'Q' + i)],
+  faam: [...Array.from({length:21}, (_, i) => 'AVD ' + (i+1)), ...Array.from({length:8}, (_, i) => 'Desporto ' + (i+1))],
+  alrrsi: Array.from({length:12}, (_, i) => String(i+1)),
+  wosi: Array.from({length:21}, (_, i) => String(i+1)),
+  dash: Array.from({length:30}, (_, i) => String(i+1)),
+  hoos: [...[1,2,3,4,5].map(i => 'S' + i), ...Array.from({length:10}, (_, i) => 'P' + (i+1)), ...Array.from({length:17}, (_, i) => 'A' + (i+1)), ...[1,2,3,4].map(i => 'SP' + i), ...[1,2,3,4].map(i => 'Q' + i)],
+  nahs: [...[1,2,3,4,5].map(i => 'D' + i), ...[1,2,3,4].map(i => 'S' + i), ...[1,2,3,4,5].map(i => 'F' + i), ...[1,2,3,4,5,6].map(i => 'A' + i)],
+  tsk: Array.from({length:13}, (_, i) => String(i+1)),
+  pgic: ['1']
+};
+let TEXTOS = {};
+function parseQ(q){
+  const t = TEXTOS[q] || {}, out = [];
+  const opDef = String(t.opcoes || '').split('\n').map(x => x.trim()).filter(Boolean);
+  for(const raw of String(t.itens || '').split('\n')){
+    const l = raw.trim(); if(!l) continue;
+    if(l.startsWith('#')){ out.push({h:l.replace(/^#+\s*/, '')}); continue; }
+    const [txt, extra] = l.split('|').map(x => x && x.trim());
+    out.push({txt, ops: extra ? extra.split(';').map(x => x.trim()).filter(Boolean) : opDef});
+  }
+  return out;
+}
+function validarQ(q){
+  const it = parseQ(q).filter(x => !x.h), d = QD[q], err = [];
+  if(it.length !== d.n) err.push(`${it.length} de ${d.n} itens`);
+  if(d.tipo === 'likert'){ const bad = it.filter(x => x.ops.length !== d.nop).length; if(bad) err.push(`${bad} itens sem ${d.nop} opções de resposta`); }
+  else { const bad = it.filter(x => x.ops.length !== 2).length; if(bad) err.push(`${bad} itens sem as 2 âncoras (início; fim)`); }
+  return err;
+}
+function cotar(q, r){
+  const v = r.map(x => x == null ? null : x);
+  const ok = x => x != null;
+  if(q === 'faos' || q === 'koos' || q === 'hoos'){
+    const sub = {}, out = {};
+    /* HOOS LK 2.0 (PT-PT): S1–S5, P1–P10, A1–A17, SP1–SP4, Q1–Q4; mesma regra do KOOS (até 2 itens em falta por subescala) */
+    const lim = q === 'hoos' ? [['Sint',[0,5]], ['Dor',[5,15]], ['AVD',[15,32]], ['Desp',[32,36]], ['QV',[36,40]]] : [['Sint',[0,7]], ['Dor',[7,16]], ['AVD',[16,33]], ['Desp',[33,38]], ['QV',[38,42]]];
+    for(const [k, ab] of lim) sub[q + k] = ab;
+    for(const k in sub){
+      const [i0, i1] = sub[k], it = v.slice(i0, i1), n = it.length, resp = it.filter(ok);
+      if(n - resp.length > 2 || !resp.length){ out[k] = null; continue; }
+      const media = resp.reduce((s, x) => s + x, 0) / resp.length;
+      out[k] = 100 - media * 25;
+    }
+    return out;
+  }
+  if(q === 'faam'){
+    const sc = [4,3,2,1,0];
+    const parte = (i0, i1, min) => { const it = v.slice(i0, i1); const resp = it.filter(ok); if(resp.length < min) return null; const val = resp.filter(x => x < 5).map(x => sc[x]); if(!val.length) return null; return val.reduce((s, x) => s + x, 0) / (val.length * 4) * 100; };
+    return {faamAvd: parte(0, 21, 20), faamDesp: parte(21, 29, 7)};
+  }
+  if(q === 'lefs'){ return {lefs: v.every(ok) ? v.reduce((s, x) => s + x, 0) : null}; }
+  if(q === 'dash'){ const resp = v.filter(ok).map(x => x + 1); return {dash: resp.length >= 27 ? (resp.reduce((s, x) => s + x, 0) / resp.length - 1) * 25 : null}; }
+  if(q === 'wosi'){ return {wosi: v.every(ok) ? v.reduce((s, x) => s + x, 0) : null}; }
+  /* NAHS PT-PT (Rodrigues et al. 2017): 0–4 por item (impresso de 4 = nenhuma a 0 = extrema); soma × 1,25; só com os 20 itens */
+  if(q === 'nahs'){ return {nahs: v.every(ok) ? v.reduce((s, x) => s + (4 - x), 0) * 1.25 : null}; }
+  /* TSK-13 PT-PT (Cordeiro et al. 2013): 1–4 por item, sem itens invertidos; só com os 13 itens (decisão de 31/10/2026) */
+  if(q === 'tsk'){ return {tsk: v.every(ok) ? v.reduce((s, x) => s + x + 1, 0) : null}; }
+  /* PGIC PT-PT (Domingues & Cruz 2011): uma pergunta, 1–7 pela ordem impressa */
+  if(q === 'pgic'){ return {pgic: ok(v[0]) ? v[0] + 1 : null}; }
+  if(q === 'alrrsi'){ return {alrrsi: v.every(ok) ? v.reduce((s, x) => s + x, 0) / 120 * 100 : null}; }
+  return {};
+}
+
+/* ===================== Questionários no iPad (as respostas ficam só neste aparelho até serem enviadas) ===================== */
+const K = 'qfisio.';
+const ROT = {koosDor:'KOOS · Dor', koosSint:'KOOS · Sintomas', koosAVD:'KOOS · AVD', koosDesp:'KOOS · Desporto e recreação', koosQV:'KOOS · Qualidade de vida',
+  faosDor:'FAOS · Dor', faosSint:'FAOS · Sintomas', faosAVD:'FAOS · AVD', faosDesp:'FAOS · Desporto e recreação', faosQV:'FAOS · Qualidade de vida',
+  faamAvd:'FAAM · AVD (%)', faamDesp:'FAAM · Desporto (%)', lefs:'LEFS (0–80)', dash:'DASH (0–100)', wosi:'WOSI (0–2100)', tsk:'TSK-13 (13–52)', pgic:'PGIC (1–7)',
+  hoosSint:'HOOS · Sintomas', hoosDor:'HOOS · Dor', hoosAVD:'HOOS · AVD', hoosDesp:'HOOS · Desporto e lazer', hoosQV:'HOOS · Qualidade de vida', nahs:'NAHS (0–100)'};
+const $ = s => document.querySelector(s);
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(v, d){ if(v == null || !isFinite(v)) return '—'; const f = Math.pow(10, d); return (Math.round(v * f) / f).toFixed(d).replace('.', ','); }
+const hoje = () => new Date().toISOString().slice(0, 10);
+const dataPT = iso => iso ? iso.split('-').reverse().join('/') : '—';
+function ler(k, def){ try{ const v = localStorage.getItem(K + k); return v == null ? def : JSON.parse(v); }catch(e){ return def; } }
+function gravar(k, v){ try{ localStorage.setItem(K + k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+let PIN = ler('pin', null), REG = ler('registos', []);
+TEXTOS = ler('textos', {});
+let V = PIN ? {ecra:'bloqueio', depois:'inicio'} : {ecra:'novoPin'};
+let ATUAL = null;   // registo em preenchimento
+let UT = null;      // posição no questionário {qi, ii}
+const prontos = () => Object.keys(QD).filter(q => !validarQ(q).length);
+function salvarReg(){ if(!gravar('registos', REG)) aviso('Não foi possível guardar neste iPad. Envie as respostas antes de fechar a app.'); }
+function aviso(t){ const el = $('#aviso'); if(!el) return alert(t); el.textContent = t; el.hidden = false; setTimeout(() => { el.hidden = true; }, 6000); }
+function slug(s){ return String(s || 'utente').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '_'); }
+
+/* ---------- ecrãs ---------- */
+function render(){
+  const f = {bloqueio:telaPin, novoPin:telaNovoPin, inicio:telaInicio, utente:telaUtente, fim:telaFim, resultado:telaResultado}[V.ecra] || telaInicio;
+  $('#app').innerHTML = f();
+  const foco = $('[data-foco]'); if(foco) foco.focus();
+  window.scrollTo(0, 0);
+}
+function telaPin(){
+  return `<div class="centro"><h1>Acesso do fisioterapeuta</h1><p>Introduza o código de 4 dígitos.</p><input id="pin" class="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" data-foco><div class="nav">${V.voltar ? '<button class="btn" data-a="voltar-ut">Voltar ao questionário</button>' : '<span></span>'}<button class="btn pri" data-a="pin">Entrar</button></div><p id="pinmsg" class="muted"></p></div>`;
+}
+function telaNovoPin(){
+  return `<div class="centro"><h1>Questionários · Fisioterapia</h1><p>Primeira utilização: escolha um código de 4 dígitos. Só com ele se sai do ecrã do utente e se veem as respostas.</p><input id="pin1" class="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="código" data-foco><input id="pin2" class="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="repetir"><div class="nav"><span></span><button class="btn pri" data-a="definir-pin">Guardar código</button></div><p id="pinmsg" class="muted"></p></div>`;
+}
+function telaInicio(){
+  const pr = prontos(), inst = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  let h = `<header class="top"><div><b>Questionários · Fisioterapia</b><span class="muted"> · área do fisioterapeuta</span></div><button class="btn" data-a="bloquear">Bloquear</button></header><main class="wrap">`;
+  if(!inst) h += `<div class="banner">Para funcionar sem internet e não perder os textos, instale a app: botão Partilhar do Safari → «Adicionar ao ecrã principal».</div>`;
+  h += `<section class="card"><h2>Novo preenchimento</h2>`;
+  if(!pr.length) h += `<p class="muted">Importe primeiro os textos dos questionários (secção abaixo).</p>`;
+  else {
+    h += `<div class="grid2"><label>Código do utente (sem nome)<input id="cod" autocomplete="off" autocapitalize="characters" placeholder="FT-0001"></label><label>Data da avaliação<input id="dat" type="date" value="${hoje()}"></label></div><p class="lbl">Questionários a preencher</p><div class="chips">`;
+    for(const q of pr) h += `<label class="chip"><input type="checkbox" data-q="${q}">${QD[q].nome} <span class="muted">· ${QD[q].reav ? 'só em reavaliações' : QD[q].n + ' perguntas'}</span></label>`;
+    h += `</div><div class="nav"><span class="muted">Depois de entregar, o utente só sai com o seu código.</span><button class="btn pri" data-a="entregar">Entregar ao utente</button></div>`;
+  }
+  h += `</section><section class="card"><h2>Respostas neste iPad (${REG.length})</h2>`;
+  if(!REG.length) h += `<p class="muted">Ainda não há respostas guardadas.</p>`;
+  for(const r of REG.slice().reverse()){
+    const est = r.enviado ? `<span class="tag ok">Enviado ${dataPT(r.enviado)}</span>` : (r.fim ? '<span class="tag warn">Por enviar</span>' : '<span class="tag">Incompleto</span>');
+    h += `<div class="linha"><div><b>${esc(r.codigo)}</b> · ${dataPT(r.data)} · ${r.lista.map(q => QD[q] ? QD[q].nome : q).join(', ')} ${est}</div><div class="acts">${r.fim ? '' : `<button class="btn" data-a="continuar" data-id="${r.id}">Continuar</button>`}<button class="btn" data-a="ver" data-id="${r.id}">Ver</button><button class="btn" data-a="enviar" data-id="${r.id}">Enviar</button><button class="btn perigo" data-a="apagar" data-id="${r.id}">Apagar</button></div></div>`;
+  }
+  h += `<p class="muted">Envie cada ficheiro para o Mac (AirDrop ou Ficheiros) e apague-o daqui depois de o importar no relatório.</p></section>`;
+  h += `<section class="card"><h2>Textos dos questionários</h2><p class="muted">Os textos não estão na app: importe o ficheiro criado no Mac em «Textos dos questionários → Exportar textos para o iPad». Ficam só neste iPad.</p><div class="chips">`;
+  for(const q in QD){ const e = validarQ(q); h += `<span class="tag ${e.length ? '' : 'ok'}">${QD[q].nome}: ${e.length ? 'em falta' : 'pronto'}</span>`; }
+  h += `</div><div class="nav"><span></span><label class="btn">Importar ficheiro de textos<input id="ftx" type="file" accept=".json,application/json" hidden></label></div></section>`;
+  h += `<section class="card"><h2>Fichas de avaliação</h2><div class="nav"><a class="btn" style="text-decoration:none" href="fichas/joelho.html">Joelho</a><a class="btn" style="text-decoration:none" href="fichas/anca.html">Anca</a><a class="btn" style="text-decoration:none" href="fichas/ombro.html">Ombro e cintura escapular</a><a class="btn" style="text-decoration:none" href="fichas/tornozelo-pe.html">Tornozelo e pé</a></div></section>`;
+  h += `<section class="card"><h2>Definições</h2><div class="nav"><button class="btn" data-a="mudar-pin">Mudar o código</button><button class="btn perigo" data-a="apagar-tudo">Apagar tudo deste iPad</button></div><p class="muted">Use o Acesso Guiado do iPad (Definições → Acessibilidade → Acesso Guiado) para o utente não sair desta app.</p></section>`;
+  return h + `</main>`;
+}
+function itens(q){ return parseQ(q).filter(x => !x.h); }
+function tituloAntes(q, i){ let n = -1, t = ''; for(const x of parseQ(q)){ if(x.h){ t = x.h; continue; } n++; if(n === i) return t; } return ''; }
+function telaUtente(){
+  const r = ATUAL, tot = r.lista.reduce((s, q) => s + QD[q].n, 0), feitos = r.lista.slice(0, UT.qi).reduce((s, q) => s + QD[q].n, 0) + Math.max(0, UT.ii);
+  let h = `<div class="ut-top"><div class="prog"><div style="width:${(tot ? feitos / tot * 100 : 0).toFixed(1)}%"></div></div><button class="btn mini" data-a="sair-ut">Fisioterapeuta</button></div><div class="ut">`;
+  const q = r.lista[UT.qi], d = QD[q], t = TEXTOS[q] || {};
+  if(UT.ii < 0){
+    h += `<p class="ut-q">${esc(d.nome)} · questionário ${UT.qi + 1} de ${r.lista.length}</p><h2>${esc(d.nome)}</h2><p class="wrap">${esc(t.instr || 'Responda a cada pergunta escolhendo a opção que melhor descreve a sua situação.')}</p><div class="nav"><span></span><button class="btn pri grande" data-a="seg">Começar</button></div>`;
+  } else {
+    const it = itens(q)[UT.ii], v = r.resp[q][UT.ii], tit = tituloAntes(q, UT.ii);
+    h += `<p class="ut-q">${esc(d.nome)} · pergunta ${UT.ii + 1} de ${d.n}</p>${tit ? `<p class="ut-sec">${esc(tit)}</p>` : ''}<h2>${esc(it.txt)}</h2>`;
+    if(d.tipo === 'likert') h += `<div class="ops">${it.ops.map((o, i) => `<button class="op${v === i ? ' on' : ''}" data-a="r" data-v="${i}">${esc(o)}</button>`).join('')}</div>`;
+    else h += `<div class="vas"><input type="range" min="0" max="100" step="1" value="${v == null ? 50 : v}" data-vas="1" aria-label="Escala de 0 a 100"><div class="anc"><span>${esc(it.ops[0] || '')}</span><b id="vv">${v != null ? v : 'mova o cursor'}</b><span>${esc(it.ops[1] || '')}</span></div></div>`;
+    h += `<div class="nav"><button class="btn grande" data-a="ant">Anterior</button><button class="lnk" data-a="saltar">Prefiro não responder</button><button class="btn pri grande" data-a="seg"${v == null ? ' disabled' : ''}>Seguinte</button></div>`;
+  }
+  return h + `</div>`;
+}
+function telaFim(){ return `<div class="centro"><h1>Obrigado.</h1><p>Terminou os questionários. Entregue o iPad ao fisioterapeuta.</p><div class="nav"><span></span><button class="btn" data-a="sair-ut">Fisioterapeuta</button></div></div>`; }
+function pontuacoes(r){
+  const out = [];
+  for(const q of r.lista){
+    const resp = r.resp[q] || [], n = resp.filter(x => x != null).length, sc = cotar(q, resp);
+    out.push({q, n, tot:QD[q].n, sc});
+  }
+  return out;
+}
+function telaResultado(){
+  const r = REG.find(x => x.id === V.id); if(!r){ V = {ecra:'inicio'}; return telaInicio(); }
+  let h = `<header class="top"><div><b>${esc(r.codigo)}</b> · ${dataPT(r.data)}</div><button class="btn" data-a="inicio">Início</button></header><main class="wrap"><section class="card"><h2>Pontuações</h2><table class="tab"><tbody>`;
+  for(const p of pontuacoes(r)){
+    h += `<tr><th colspan="2">${QD[p.q].nome} <span class="muted">· ${p.n} de ${p.tot} respondidas</span></th></tr>`;
+    for(const k in p.sc){ const d = PROM_INT.includes(k) ? 0 : 1; h += `<tr><td>${esc(ROT[k] || k)}</td><td class="num">${p.sc[k] != null ? fmt(p.sc[k], d) : '<span class="muted">não cotável (itens em falta)</span>'}</td></tr>`; }
+  }
+  h += `</tbody></table><p class="muted">A cotação é repetida no Mac ao importar o ficheiro, a partir das respostas.</p><div class="nav"><button class="btn perigo" data-a="apagar" data-id="${r.id}">Apagar deste iPad</button><button class="btn pri" data-a="enviar" data-id="${r.id}">Enviar para o Mac</button></div>${r.enviado ? `<p class="muted">Enviado a ${dataPT(r.enviado)}. Depois de o importar no relatório, apague-o daqui.</p>` : ''}</section></main>`;
+  return h;
+}
+
+/* ---------- ações ---------- */
+function irUtente(){ const av = $('#aviso'); if(av) av.hidden = true; V = {ecra:'utente'}; render(); }
+function avancar(){
+  const q = ATUAL.lista[UT.qi];
+  salvarReg();
+  if(UT.ii < QD[q].n - 1){ UT.ii++; render(); return; }
+  if(UT.qi < ATUAL.lista.length - 1){ UT.qi++; UT.ii = -1; render(); return; }
+  ATUAL.fim = new Date().toISOString(); salvarReg(); V = {ecra:'fim'}; render();
+}
+async function enviar(r){
+  const nome = `respostas_${slug(r.codigo)}_${r.data}.json`, qs = {};
+  for(const q of r.lista) qs[q] = {r:r.resp[q], data:r.data};
+  const txt = JSON.stringify({formato:'respostas-questionarios', versao:1, codigo:r.codigo, data:r.data, criado:r.criado, terminado:r.fim || null, questionarios:qs});
+  const file = new File([txt], nome, {type:'application/json'});
+  let ok = false;
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:nome}); ok = true; }catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  if(!ok){ const url = URL.createObjectURL(file), a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); ok = true; }
+  r.enviado = hoje(); salvarReg(); render();
+}
+document.addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-a]'); if(!b) return;
+  const a = b.dataset.a, id = b.dataset.id, r = id ? REG.find(x => x.id === id) : null;
+  if(a === 'definir-pin'){ const p1 = $('#pin1').value, p2 = $('#pin2').value; if(!/^\d{4}$/.test(p1) || p1 !== p2){ $('#pinmsg').textContent = 'Os dois códigos têm de ser iguais e ter 4 dígitos.'; return; } PIN = p1; gravar('pin', PIN); V = {ecra:'inicio'}; render(); return; }
+  if(a === 'pin'){
+    if(($('#pin').value || '') !== PIN){ $('#pinmsg').textContent = 'Código incorreto.'; $('#pin').value = ''; return; }
+    if(V.voltar){ // saída do modo utente
+      if(!ATUAL.fim && Object.values(ATUAL.resp).some(x => x.some(y => y != null))) salvarReg();
+      const fim = !!ATUAL.fim, id2 = ATUAL.id; ATUAL = null; UT = null;
+      V = fim ? {ecra:'resultado', id:id2} : {ecra:'inicio'}; render(); return;
+    }
+    V = {ecra:V.depois || 'inicio'}; render(); return;
+  }
+  if(a === 'bloquear'){ V = {ecra:'bloqueio', depois:'inicio'}; render(); return; }
+  if(a === 'mudar-pin'){ V = {ecra:'novoPin'}; render(); return; }
+  if(a === 'inicio'){ V = {ecra:'inicio'}; render(); return; }
+  if(a === 'apagar-tudo'){ if(confirm('Apagar deste iPad todas as respostas, os textos e o código? Não pode ser desfeito.')){ try{ for(const k of ['pin','registos','textos']) localStorage.removeItem(K + k); }catch(e){} PIN = null; REG = []; TEXTOS = {}; V = {ecra:'novoPin'}; render(); } return; }
+  if(a === 'entregar'){
+    const cod = ($('#cod').value || '').trim(), dat = $('#dat').value || hoje(), lista = [...document.querySelectorAll('[data-q]:checked')].map(x => x.dataset.q);
+    if(!cod){ aviso('Escreva o código do utente (sem nome).'); return; }
+    if(!lista.length){ aviso('Escolha pelo menos um questionário.'); return; }
+    const resp = {}; for(const q of lista) resp[q] = new Array(QD[q].n).fill(null);
+    ATUAL = {id:'r' + Date.now().toString(36), codigo:cod, data:dat, criado:new Date().toISOString(), lista, resp, fim:null, enviado:null};
+    REG.push(ATUAL); salvarReg(); UT = {qi:0, ii:-1}; irUtente(); return;
+  }
+  if(a === 'continuar' && r){ ATUAL = r; let qi = 0, ii = -1; for(let k = 0; k < r.lista.length; k++){ const j = r.resp[r.lista[k]].findIndex(x => x == null); if(j >= 0){ qi = k; ii = j; break; } } UT = {qi, ii}; irUtente(); return; }
+  if(a === 'ver' && r){ V = {ecra:'resultado', id:r.id}; render(); return; }
+  if(a === 'enviar' && r){ await enviar(r); return; }
+  if(a === 'apagar' && r){ if(r.enviado || confirm('Este ficheiro ainda não foi enviado. Apagar mesmo assim?')){ REG = REG.filter(x => x !== r); salvarReg(); V = {ecra:'inicio'}; render(); } return; }
+  // modo utente
+  if(!ATUAL || !UT) return;
+  const q = ATUAL.lista[UT.qi];
+  if(a === 'sair-ut'){ V = {ecra:'bloqueio', voltar:true, ultimo:V.ecra}; render(); return; }
+  if(a === 'voltar-ut'){ V = {ecra:V.ultimo === 'fim' ? 'fim' : 'utente'}; render(); return; }
+  if(a === 'r'){ ATUAL.resp[q][UT.ii] = +b.dataset.v; render(); setTimeout(() => { if(V.ecra === 'utente' && UT && UT.ii >= 0) avancar(); }, 200); return; }
+  if(a === 'saltar'){ ATUAL.resp[q][UT.ii] = null; avancar(); return; }
+  if(a === 'seg'){ avancar(); return; }
+  if(a === 'ant'){ if(UT.ii > -1) UT.ii--; else if(UT.qi > 0){ UT.qi--; UT.ii = QD[ATUAL.lista[UT.qi]].n - 1; } render(); return; }
+});
+document.addEventListener('input', ev => {
+  if(!(ev.target.dataset && ev.target.dataset.vas) || !ATUAL) return;
+  const q = ATUAL.lista[UT.qi]; ATUAL.resp[q][UT.ii] = +ev.target.value;
+  const vv = $('#vv'); if(vv) vv.textContent = ev.target.value;
+  const seg = document.querySelector('[data-a="seg"]'); if(seg) seg.disabled = false;
+});
+document.addEventListener('keydown', ev => { if(ev.key === 'Enter' && $('#pin')){ const b = document.querySelector('[data-a="pin"]'); if(b) b.click(); } });
+document.addEventListener('change', ev => {
+  if(ev.target.id !== 'ftx') return;
+  const f = ev.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      const o = JSON.parse(rd.result);
+      if(!o || o.formato !== 'textos-questionarios' || typeof o.textos !== 'object') throw 0;
+      /* junta aos textos já importados: pode importar um ficheiro de cada modelo (joelho, tornozelo, ombro) */
+      const antes = TEXTOS; TEXTOS = {...antes, ...o.textos};
+      const novos = Object.keys(o.textos).filter(q => QD[q] && !validarQ(q).length);
+      for(const q of Object.keys(o.textos)) if(QD[q] && validarQ(q).length && antes[q]){ TEXTOS[q] = antes[q]; }
+      if(!gravar('textos', TEXTOS)) aviso('Não foi possível guardar os textos neste iPad.');
+      render(); aviso(novos.length ? 'Textos importados: ' + novos.map(q => QD[q].nome).join(', ') + '. Prontos: ' + prontos().map(q => QD[q].nome).join(', ') + '.' : 'O ficheiro não tem nenhum questionário completo.');
+    }catch(e){ aviso('Este ficheiro não é um ficheiro de textos exportado pelo Mac.'); }
+  };
+  rd.readAsText(f);
+});
+if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+render();
+
+</script>
+</body>
+</html>
