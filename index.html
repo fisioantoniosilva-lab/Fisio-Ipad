@@ -92,6 +92,29 @@ const QD = {
 /* número de opções e tipo de cada item (alguns questionários misturam formatos) */
 const nopItem = (q, i) => QD[q].nops ? QD[q].nops[i] : QD[q].nop;
 const vasItem = (q, i) => QD[q].tipo === 'vas100' || !!(QD[q].vas && QD[q].vas.includes(i));
+const DESC_Q = {
+  koos:'dor, sintomas, função e qualidade de vida relacionados com o joelho',
+  oks:'dor e função do joelho na osteoartrose e após artroplastia',
+  lefs:'função do membro inferior nas atividades diárias e desportivas',
+  faos:'dor, sintomas, função e qualidade de vida relacionados com o pé e tornozelo',
+  faam:'função do pé e tornozelo nas atividades diárias e no desporto',
+  kjoc:'função do ombro e cotovelo no atleta de lançamento',
+  spadi:'dor e incapacidade do ombro',
+  dash:'incapacidade e sintomas do membro superior',
+  wosi:'qualidade de vida na instabilidade do ombro',
+  hoos:'dor, sintomas, função e qualidade de vida relacionados com a anca',
+  nahs:'dor, sintomas, função e atividade na anca sem artrose',
+  alrrsi:'prontidão psicológica para regressar ao desporto após LCA',
+  tsk:'medo do movimento e de nova lesão (cinesiofobia)',
+  pgic:'perceção do utente sobre a mudança desde o início do tratamento',
+  nprs:'intensidade da dor',
+  rmdq:'incapacidade funcional por dor lombar',
+  sbst:'risco de mau prognóstico na dor lombar, para estratificação',
+  eq5d:'estado de saúde geral e qualidade de vida'
+};
+/* família de uma pontuação (koosDor → koos, nprsJo → nprs) */
+const famQ = k => (String(k).match(/^(koos|faos|faam|hoos|nprs|sbst|eq5d)/) || [null, k])[1];
+const descQ = k => DESC_Q[famQ(k)] || '';
 /* pontuações apresentadas sem casas decimais */
 const PROM_INT = ['wosi', 'lefs', 'tsk', 'pgic', 'rmdq', 'sbst', 'sbstPsi', 'eq5dVas'];
 /* resultados em texto (não numéricos) */
@@ -224,7 +247,7 @@ function telaInicio(){
   if(!pr.length) h += `<p class="muted">Importe primeiro os textos dos questionários (secção abaixo).</p>`;
   else {
     h += `<div class="grid2"><label>Código do utente (sem nome)<input id="cod" autocomplete="off" autocapitalize="characters" placeholder="FT-0001"></label><label>Data da avaliação<input id="dat" type="date" value="${hoje()}"></label></div><p class="lbl">Questionários a preencher</p><div class="chips">`;
-    for(const q of pr) h += `<label class="chip"><input type="checkbox" data-q="${q}">${QD[q].nome} <span class="muted">· ${QD[q].reav ? 'só em reavaliações' : QD[q].n + ' perguntas'}</span></label>`;
+    for(const q of pr) h += `<label class="chip"><input type="checkbox" data-q="${q}"><span><b>${QD[q].nome}</b> <span class="muted">(${esc(descQ(q))}) · ${QD[q].reav ? 'só em reavaliações' : QD[q].n + ' perguntas'}</span></span></label>`;
     h += `</div><div class="nav"><span class="muted">Depois de entregar, o utente só sai com o seu código.</span><button class="btn pri" data-a="entregar">Entregar ao utente</button></div>`;
   }
   h += `</section><section class="card"><h2>Respostas neste iPad (${REG.length})</h2>`;
@@ -271,7 +294,7 @@ function telaResultado(){
   const r = REG.find(x => x.id === V.id); if(!r){ V = {ecra:'inicio'}; return telaInicio(); }
   let h = `<header class="top"><div><b>${esc(r.codigo)}</b> · ${dataPT(r.data)}</div><button class="btn" data-a="inicio">Início</button></header><main class="wrap"><section class="card"><h2>Pontuações</h2><table class="tab"><tbody>`;
   for(const p of pontuacoes(r)){
-    h += `<tr><th colspan="2">${QD[p.q].nome} <span class="muted">· ${p.n} de ${p.tot} respondidas</span></th></tr>`;
+    h += `<tr><th colspan="2">${QD[p.q].nome} <span class="muted">(${esc(descQ(p.q))}) · ${p.n} de ${p.tot} respondidas</span></th></tr>`;
     for(const k in p.sc){ const d = PROM_INT.includes(k) ? 0 : 1; h += `<tr><td>${esc(ROT[k] || k)}</td><td class="num">${p.sc[k] != null ? (PROM_TXT[k] ? esc(PROM_TXT[k](p.sc[k])) : fmt(p.sc[k], d)) :'<span class="muted">não cotável (itens em falta)</span>'}</td></tr>`; }
   }
   h += `</tbody></table><p class="muted">A cotação é repetida no Mac ao importar o ficheiro, a partir das respostas.</p><div class="nav"><button class="btn perigo" data-a="apagar" data-id="${r.id}">Apagar deste iPad</button><button class="btn pri" data-a="enviar" data-id="${r.id}">Enviar para o Mac</button></div>${r.enviado ? `<p class="muted">Enviado a ${dataPT(r.enviado)}. Depois de o importar no relatório, apague-o daqui.</p>` : ''}</section></main>`;

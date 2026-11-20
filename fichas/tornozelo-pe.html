@@ -1605,8 +1605,9 @@ function buildEditor(){
     h += `</tbody></table><div class="calcline" id="calc-om">${esc(calcOmTxt())}</div>`;
   }
   h += `<div class="subt">Questionários e dor</div><div class="fields">`;
-  for(const k of promsAtivos()) h += fld(esc(PROMS[k].nome), inp(`${ap}.proms.${k}`, 'inputmode="decimal"'));
-  { const qp = Object.keys(QD).filter(q => qDisp(q, a) && !validarQ(q).length); if(qp.length) h += `<div class="f full"><label>Questionário preenchido em papel: transcrever as respostas (cotação automática)</label><div style="display:flex;flex-wrap:wrap;gap:6px">${qp.map(q => `<button type="button" class="btn small" data-papel="${q}">${esc(QD[q].nome)}${a.resp && a.resp[q] ? ' ✓' : ''}</button>`).join('')}</div></div>`; }
+  { const vistos = new Set(); for(const k of promsAtivos()){ const f = famQ(k), d = !vistos.has(f) && descQ(k); vistos.add(f);
+    h += fld(esc(PROMS[k].nome) + (d ? ` <span style="font-weight:400;color:var(--muted)">(${esc(d)})</span>` : ''), inp(`${ap}.proms.${k}`, 'inputmode="decimal"')); } }
+  { const qp = Object.keys(QD).filter(q => qDisp(q, a) && !validarQ(q).length); if(qp.length) h += `<div class="f full"><label>Questionário preenchido em papel: transcrever as respostas (cotação automática)</label><div style="display:flex;flex-wrap:wrap;gap:6px">${qp.map(q => `<button type="button" class="btn small" data-papel="${q}" title="${esc(descQ(q))}">${esc(QD[q].nome)}${a.resp && a.resp[q] ? ' ✓' : ''} <span style="font-weight:400;color:var(--muted)">(${esc(descQ(q))})</span></button>`).join('')}</div></div>`; }
   if(tab > 0) h += fld('PGIC · perceção global de mudança desde o início do tratamento (1–7)', sel(`${ap}.proms.pgic`, [['', '—'], ...pgicOps().map((o, i) => [String(i + 1), `${i + 1}${o ? ' · ' + o : ''}`])]), 'full');
   h += `</div><p class="hint">† Validação PT-PT limitada (só em resumo de congresso ou trabalho académico) ou inexistente: fica assinalado no relatório.</p>`;
   if(tz){
@@ -2031,6 +2032,29 @@ function exemploTzOm(){
 
 
 /* ===================== Questionários: definições, textos e cotação (comum ao Mac e ao iPad) ===================== */
+const DESC_Q = {
+  koos:'dor, sintomas, função e qualidade de vida relacionados com o joelho',
+  oks:'dor e função do joelho na osteoartrose e após artroplastia',
+  lefs:'função do membro inferior nas atividades diárias e desportivas',
+  faos:'dor, sintomas, função e qualidade de vida relacionados com o pé e tornozelo',
+  faam:'função do pé e tornozelo nas atividades diárias e no desporto',
+  kjoc:'função do ombro e cotovelo no atleta de lançamento',
+  spadi:'dor e incapacidade do ombro',
+  dash:'incapacidade e sintomas do membro superior',
+  wosi:'qualidade de vida na instabilidade do ombro',
+  hoos:'dor, sintomas, função e qualidade de vida relacionados com a anca',
+  nahs:'dor, sintomas, função e atividade na anca sem artrose',
+  alrrsi:'prontidão psicológica para regressar ao desporto após LCA',
+  tsk:'medo do movimento e de nova lesão (cinesiofobia)',
+  pgic:'perceção do utente sobre a mudança desde o início do tratamento',
+  nprs:'intensidade da dor',
+  rmdq:'incapacidade funcional por dor lombar',
+  sbst:'risco de mau prognóstico na dor lombar, para estratificação',
+  eq5d:'estado de saúde geral e qualidade de vida'
+};
+/* família de uma pontuação (koosDor → koos, nprsJo → nprs) */
+const famQ = k => (String(k).match(/^(koos|faos|faam|hoos|nprs|sbst|eq5d)/) || [null, k])[1];
+const descQ = k => DESC_Q[famQ(k)] || '';
 const QD = {
   koos:   {reg:'jo', nome:'KOOS',    n:42, tipo:'likert', nop:5},
   lefs:   {reg:'jo', regs:['jo','an'], nome:'LEFS',    n:20, tipo:'likert', nop:5},
@@ -2306,7 +2330,7 @@ function renderSessao(){
   if(ativo('om')) h += fld('Ombro', sel(ap + '.bat.om', Object.entries(BAT).filter(([, p]) => p.reg === 'om').map(([k, p]) => [k, p.nome]), 'data-bat="1"'));
   h += `</div><div class="chips">`;
   for(const id in TS) if(regOk(TS[id]) && (!TS[id].forca || GRV(FG[id].reg).includes(id))) h += `<label class="chipck${b.t[id] ? ' on' : ''}"><input type="checkbox" data-bt="${id}"${b.t[id] ? ' checked' : ''}>${esc(TS[id].nome)}</label>`;
-  for(const q in QD) if(qDisp(q, a)) h += `<label class="chipck q${b.q[q] ? ' on' : ''}"><input type="checkbox" data-bq="${q}"${b.q[q] ? ' checked' : ''}>${QD[q].nome}</label>`;
+  for(const q in QD) if(qDisp(q, a)) h += `<label class="chipck q${b.q[q] ? ' on' : ''}"><input type="checkbox" data-bq="${q}"${b.q[q] ? ' checked' : ''}>${QD[q].nome} <span style="font-weight:400;opacity:.75">(${esc(descQ(q))})</span></label>`;
   h += `</div></div></div>`;
   for(const [sk, st] of SEC){
     const ids = Object.keys(TS).filter(id => TS[id].sec === sk && testeAtivo(a, id));

@@ -1,5 +1,5 @@
 // Sempre que alterar ficheiros, mude a versão (v1 → v2…) e volte a publicar.
-const CACHE = 'fisio-ipad-v3';
+const CACHE = 'fisio-ipad-v4';
 const FICHEIROS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png',
   './fichas/joelho.html', './fichas/anca.html', './fichas/ombro.html', './fichas/tornozelo-pe.html'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHEIROS)).then(() => self.skipWaiting())); });
