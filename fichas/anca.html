@@ -380,25 +380,29 @@ const PERFIS_JO = {
   pfp:     {nome:'Dor patelofemoral',      curto:'Dor patelofemoral',     proms:[...KOOS5,'lefs','nprsJo'],       anca:'sim', tipoRef:'sintomas'},
   tend:    {nome:'Tendinopatia rotuliana', curto:'Tendinopatia rotuliana',proms:[...KOOS5,'lefs','nprsJo'],       anca:'nao', tipoRef:'sintomas'},
   menisco: {nome:'Lesão meniscal',         curto:'Lesão meniscal',        proms:[...KOOS5,'lefs','nprsJo'],       anca:'nao', tipoRef:'lesao'},
-  oa:      {nome:'Osteoartrose do joelho', curto:'Osteoartrose',          proms:[...KOOS5,'lefs','nprsJo','oks'], anca:'nao', tipoRef:'sintomas'}
+  oa:      {nome:'Osteoartrose do joelho', curto:'Osteoartrose',          proms:[...KOOS5,'lefs','nprsJo','oks'], anca:'nao', tipoRef:'sintomas'},
+  outro:   {nome:'Outra condição (especificar)', curto:'Outra condição', proms:[...KOOS5,'lefs','nprsJo'], anca:'nao', tipoRef:'sintomas', outro:true}
 };
 const PERFIS_TZ = {
   entorse: {nome:'Entorse lateral do tornozelo',      curto:'Entorse lateral',        proms:['faosDor','faosSint','faosAVD','faosDesp','faosQV','nprsTzD','nprsTz24']},
-  cai:     {nome:'Instabilidade crónica do tornozelo', curto:'Instabilidade crónica', proms:['faosDor','faosSint','faosAVD','faosDesp','faosQV','nprsTzD','nprsTz24']}
+  cai:     {nome:'Instabilidade crónica do tornozelo', curto:'Instabilidade crónica', proms:['faosDor','faosSint','faosAVD','faosDesp','faosQV','nprsTzD','nprsTz24']},
+  outro:   {nome:'Outra condição (especificar)', curto:'Outra condição', proms:['faosDor','faosSint','faosAVD','faosDesp','faosQV','nprsTzD','nprsTz24'], outro:true}
 };
 const PERFIS_OM = {
   coifa:     {nome:'Dor no ombro relacionada com a coifa', curto:'Dor relacionada com a coifa', proms:['spadi','dash','nprsOm']},
   instab:    {nome:'Instabilidade glenoumeral',            curto:'Instabilidade glenoumeral',   proms:['spadi','dash','wosi','tsk','nprsOm']},
   capsulite: {nome:'Capsulite adesiva',                    curto:'Capsulite adesiva',           proms:['spadi','dash','nprsOm']},
   posrep:    {nome:'Pós-reparação da coifa',               curto:'Pós-reparação da coifa',      proms:['spadi','dash','tsk','nprsOm']},
-  ac:        {nome:'Lesão acromioclavicular',              curto:'Lesão acromioclavicular',     proms:['spadi','dash','nprsOm']}
+  ac:        {nome:'Lesão acromioclavicular',              curto:'Lesão acromioclavicular',     proms:['spadi','dash','nprsOm']},
+  outro:     {nome:'Outra condição (especificar)',         curto:'Outra condição',              proms:['spadi','dash','nprsOm'], outro:true}
 };
 const HOOS5 = ['hoosSint','hoosDor','hoosAVD','hoosDesp','hoosQV'];
 const PERFIS_AN = {
   fais:    {nome:'Conflito femoroacetabular (FAIS) / dor intra-articular', curto:'Conflito femoroacetabular', proms:[...HOOS5,'nprsAn'], q:['hoos']},
   virilha: {nome:'Dor na virilha relacionada com os adutores', curto:'Virilha · adutores', proms:[...HOOS5,'nprsAn'], q:['hoos']},
   glutea:  {nome:'Tendinopatia glútea / dor lateral da anca', curto:'Tendinopatia glútea', proms:[...HOOS5,'nprsAn'], q:['hoos']},
-  oa:      {nome:'Osteoartrose da anca / artroplastia', curto:'Osteoartrose da anca', proms:[...HOOS5,'nprsAn'], q:['hoos']}
+  oa:      {nome:'Osteoartrose da anca / artroplastia', curto:'Osteoartrose da anca', proms:[...HOOS5,'nprsAn'], q:['hoos']},
+  outro:   {nome:'Outra condição (especificar)', curto:'Outra condição', proms:[...HOOS5,'nprsAn'], q:['hoos'], outro:true}
 };
 const TT = {
   wblt: {nome:'WBLT', r:'WBLT',          un:'cm',   dec:1, tipo:'dif'},
@@ -489,11 +493,13 @@ function semLado(r){ return r === 'jo' && S.meta.jo.lado === 'N'; }
 function non(r){ return inv(r) === 'E' ? 'D' : 'E'; }
 function ladoNome(s){ return s === 'E' ? 'esquerdo' : 'direito'; }
 function ladoTxt(r){ if(semLado(r)) return 'sem lado afetado'; return S.meta[r].lado === '' ? 'lado por definir' : ladoNome(inv(r)); }
-function perfilJo(){ return PERFIS_JO[S.meta.jo.perfil] || PERFIS_JO.lca; }
+/* perfil «Outra condição»: o texto livre substitui o nome no relatório */
+function comOutro(p, r){ if(!p.outro) return p; const t = String((S.meta[r] && S.meta[r].perfilOutro) || '').trim(); return t ? {...p, curto:t, nome:t} : p; }
+function perfilJo(){ return comOutro(PERFIS_JO[S.meta.jo.perfil] || PERFIS_JO.lca, 'jo'); }
 function perfilDe(r){ return r === 'jo' ? perfilJo() : (r === 'tz' ? perfilTz() : (r === 'an' ? perfilAn() : perfilOm())); }
-function perfilAn(){ return PERFIS_AN[S.meta.an.perfil] || PERFIS_AN.fais; }
-function perfilTz(){ return PERFIS_TZ[S.meta.tz.perfil] || PERFIS_TZ.entorse; }
-function perfilOm(){ return PERFIS_OM[S.meta.om.perfil] || PERFIS_OM.instab; }
+function perfilAn(){ return comOutro(PERFIS_AN[S.meta.an.perfil] || PERFIS_AN.fais, 'an'); }
+function perfilTz(){ return comOutro(PERFIS_TZ[S.meta.tz.perfil] || PERFIS_TZ.entorse, 'tz'); }
+function perfilOm(){ return comOutro(PERFIS_OM[S.meta.om.perfil] || PERFIS_OM.instab, 'om'); }
 function promsAtivos(){
   let l = [];
   if(ativo('jo')) l = l.concat(perfilJo().proms);
@@ -1444,6 +1450,7 @@ function buildEditor(){
   if(jo){
     h += `<details class="sec" open><summary>Joelho · episódio</summary><div class="fields">`;
     h += fld('Perfil clínico', sel('meta.jo.perfil', Object.entries(PERFIS_JO).map(([k, p]) => [k, p.nome]), ST));
+    if(S.meta.jo.perfil === 'outro') h += fld('Qual a condição clínica? (aparece no relatório)', inp('meta.jo.perfilOutro', 'placeholder="Escreva a condição clínica" autocomplete="off"'), 'full');
     h += fld('Lado envolvido', sel('meta.jo.lado', [['E','Esquerdo'],['D','Direito'],['N','Sem lado afetado (rácio E/D)']], ST));
     h += fld('Referência temporal', sel('meta.jo.tipoRef', [['cirurgia','Data da cirurgia'],['lesao','Data da lesão'],['sintomas','Início dos sintomas']]));
     h += fld('Data de referência', inp('meta.jo.dataRef', 'type="date"'));
@@ -1454,6 +1461,7 @@ function buildEditor(){
   if(tz){
     h += `<details class="sec" open><summary>Tornozelo · episódio</summary><div class="fields">`;
     h += fld('Perfil clínico', sel('meta.tz.perfil', Object.entries(PERFIS_TZ).map(([k, p]) => [k, p.nome]), ST));
+    if(S.meta.tz.perfil === 'outro') h += fld('Qual a condição clínica? (aparece no relatório)', inp('meta.tz.perfilOutro', 'placeholder="Escreva a condição clínica" autocomplete="off"'), 'full');
     h += fld('Lado envolvido', sel('meta.tz.lado', LADOS, ST));
     h += fld('Data da lesão', inp('meta.tz.dataRef', 'type="date"'));
     h += fld('Entorses anteriores E / D', `<div style="display:flex;gap:6px">${inp('meta.tz.prevE', 'inputmode="numeric" aria-label="Entorses anteriores E"')}${inp('meta.tz.prevD', 'inputmode="numeric" aria-label="Entorses anteriores D"')}</div>`);
@@ -1464,6 +1472,7 @@ function buildEditor(){
   if(om){
     h += `<details class="sec" open><summary>Ombro · episódio</summary><div class="fields">`;
     h += fld('Perfil clínico', sel('meta.om.perfil', Object.entries(PERFIS_OM).map(([k, p]) => [k, p.nome]), ST));
+    if(S.meta.om.perfil === 'outro') h += fld('Qual a condição clínica? (aparece no relatório)', inp('meta.om.perfilOutro', 'placeholder="Escreva a condição clínica" autocomplete="off"'), 'full');
     h += fld('Lado envolvido', sel('meta.om.lado', LADOS, ST));
     h += fld('Membro dominante', sel('meta.om.dominante', LADOS, ST));
     h += fld('Desporto acima da cabeça', sel('meta.om.acima', [['nao','Não'],['sim','Sim']], ST));
@@ -1476,6 +1485,7 @@ function buildEditor(){
   if(an){
     h += `<details class="sec" open><summary>Anca · episódio</summary><div class="fields">`;
     h += fld('Perfil clínico', sel('meta.an.perfil', Object.entries(PERFIS_AN).map(([k, p]) => [k, p.nome]), ST), 'full');
+    if(S.meta.an.perfil === 'outro') h += fld('Qual a condição clínica? (aparece no relatório)', inp('meta.an.perfilOutro', 'placeholder="Escreva a condição clínica" autocomplete="off"'), 'full');
     h += fld('Lado envolvido', sel('meta.an.lado', LADOS, ST));
     h += fld('Rotadores externos e internos (opcional)', sel('meta.an.rot', [['nao','Não avaliar'],['sim','Avaliar']], ST));
     h += fld('Referência temporal', sel('meta.an.tipoRef', [['sintomas','Início dos sintomas'],['lesao','Data da lesão'],['cirurgia','Data da cirurgia']]));

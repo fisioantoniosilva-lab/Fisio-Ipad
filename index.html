@@ -66,7 +66,7 @@ input[type=range]{accent-color:var(--teal)}
 </style>
 </head>
 <body>
-<div id="app"><div class="centro" style="max-width:560px;margin:60px auto;padding:0 20px;font-family:-apple-system,system-ui,sans-serif;line-height:1.45;color:#13293d"><h1 style="font-size:22px">Questionários · Fisioterapia</h1><p id="aviso-arranque">A abrir…</p><p style="color:#4a5d6b;font-size:15px">Se esta mensagem não desaparecer em poucos segundos, a app não arrancou. Abra-a no <b>Safari</b> pelo endereço <b>fisioantoniosilva-lab.github.io/questionarios-fisio</b> (não pelo ficheiro guardado no iPad) e confirme que tem internet na primeira abertura.</p></div></div>
+<div id="app"><div class="centro" style="max-width:560px;margin:60px auto;padding:0 20px;font-family:-apple-system,system-ui,sans-serif;line-height:1.45;color:#13293d"><h1 style="font-size:22px">Questionários · Fisioterapia</h1><p id="aviso-arranque">A abrir…</p><p style="color:#4a5d6b;font-size:15px">Se esta mensagem não desaparecer em poucos segundos, a app não arrancou. Abra-a no <b>Safari</b> pelo endereço <b>fisioantoniosilva-lab.github.io/Fisio-Ipad</b> (não pelo ficheiro guardado no iPad) e confirme que tem internet na primeira abertura.</p></div></div>
 <div id="aviso" role="status" hidden></div>
 <script>window.addEventListener('error', function(e){ var el = document.getElementById('aviso-arranque'); if(el) el.textContent = 'Erro ao abrir a app: ' + (e && e.message ? e.message : 'desconhecido') + '. Envie uma captura deste ecrã ao fisioterapeuta responsável pela app.'; });</script>
 <script>
@@ -83,10 +83,19 @@ const QD = {
   hoos:   {reg:'an', nome:'HOOS',    n:40, tipo:'likert', nop:5},
   nahs:   {reg:'an', nome:'NAHS',    n:20, tipo:'likert', nop:5},
   tsk:    {reg:'*',  nome:'TSK-13',  n:13, tipo:'likert', nop:4},
-  pgic:   {reg:'*',  nome:'PGIC',    n:1,  tipo:'likert', nop:7, reav:true}
+  pgic:   {reg:'*',  nome:'PGIC',    n:1,  tipo:'likert', nop:7, reav:true},
+  /* lombar (20/11/2026) */
+  rmdq:   {reg:'lo', nome:'RMDQ',       n:24, tipo:'likert', nop:2},
+  sbst:   {reg:'lo', nome:'STarT Back', n:9,  tipo:'likert', nops:[2,2,2,2,2,2,2,2,5]},
+  eq5d:   {reg:'lo', nome:'EQ-5D-3L',   n:6,  tipo:'likert', nops:[3,3,3,3,3], vas:[5]}
 };
+/* número de opções e tipo de cada item (alguns questionários misturam formatos) */
+const nopItem = (q, i) => QD[q].nops ? QD[q].nops[i] : QD[q].nop;
+const vasItem = (q, i) => QD[q].tipo === 'vas100' || !!(QD[q].vas && QD[q].vas.includes(i));
 /* pontuações apresentadas sem casas decimais */
-const PROM_INT = ['wosi', 'lefs', 'tsk', 'pgic'];
+const PROM_INT = ['wosi', 'lefs', 'tsk', 'pgic', 'rmdq', 'sbst', 'sbstPsi', 'eq5dVas'];
+/* resultados em texto (não numéricos) */
+const PROM_TXT = {sbstRisco: v => ['Baixo risco', 'Médio risco', 'Alto risco'][v], eq5dPerfil: v => v};
 const COD = {
   koos: [...[1,2,3,4,5,6,7].map(i => 'S' + i), ...[1,2,3,4,5,6,7,8,9].map(i => 'P' + i), ...Array.from({length:17}, (_, i) => 'A' + (i+1)), ...[1,2,3,4,5].map(i => 'SP' + i), ...[1,2,3,4].map(i => 'Q' + i)],
   lefs: Array.from({length:20}, (_, i) => String(i+1)),
@@ -98,7 +107,10 @@ const COD = {
   hoos: [...[1,2,3,4,5].map(i => 'S' + i), ...Array.from({length:10}, (_, i) => 'P' + (i+1)), ...Array.from({length:17}, (_, i) => 'A' + (i+1)), ...[1,2,3,4].map(i => 'SP' + i), ...[1,2,3,4].map(i => 'Q' + i)],
   nahs: [...[1,2,3,4,5].map(i => 'D' + i), ...[1,2,3,4].map(i => 'S' + i), ...[1,2,3,4,5].map(i => 'F' + i), ...[1,2,3,4,5,6].map(i => 'A' + i)],
   tsk: Array.from({length:13}, (_, i) => String(i+1)),
-  pgic: ['1']
+  pgic: ['1'],
+  rmdq: Array.from({length:24}, (_, i) => String(i+1)),
+  sbst: Array.from({length:9}, (_, i) => String(i+1)),
+  eq5d: ['Mobilidade', 'Cuidados pessoais', 'Actividades habituais', 'Dor/mal-estar', 'Ansiedade/depressão', 'EQ VAS']
 };
 let TEXTOS = {};
 function parseQ(q){
@@ -115,8 +127,10 @@ function parseQ(q){
 function validarQ(q){
   const it = parseQ(q).filter(x => !x.h), d = QD[q], err = [];
   if(it.length !== d.n) err.push(`${it.length} de ${d.n} itens`);
-  if(d.tipo === 'likert'){ const bad = it.filter(x => x.ops.length !== d.nop).length; if(bad) err.push(`${bad} itens sem ${d.nop} opções de resposta`); }
-  else { const bad = it.filter(x => x.ops.length !== 2).length; if(bad) err.push(`${bad} itens sem as 2 âncoras (início; fim)`); }
+  const badL = it.filter((x, i) => !vasItem(q, i) && x.ops.length !== nopItem(q, i)).length;
+  const badV = it.filter((x, i) => vasItem(q, i) && x.ops.length !== 2).length;
+  if(badL) err.push(`${badL} itens sem o número de opções de resposta previsto`);
+  if(badV) err.push(`${badV} itens sem as 2 âncoras (início; fim)`);
   return err;
 }
 function cotar(q, r){
@@ -149,6 +163,17 @@ function cotar(q, r){
   if(q === 'tsk'){ return {tsk: v.every(ok) ? v.reduce((s, x) => s + x + 1, 0) : null}; }
   /* PGIC PT-PT (Domingues & Cruz 2011): uma pergunta, 1–7 pela ordem impressa */
   if(q === 'pgic'){ return {pgic: ok(v[0]) ? v[0] + 1 : null}; }
+  /* RMDQ PT-PT (Monteiro et al., Acta Med Port 2010): 1 ponto por frase que descreve o utente hoje (opção 0 = «Sim»); 0–24; só com os 24 itens */
+  if(q === 'rmdq'){ return {rmdq: v.every(ok) ? v.filter(x => x === 0).length : null}; }
+  /* STarT Back (Hill et al. 2008; versão PT-PT, Anexo I): Q1–8 Discordo 0 / Concordo 1; Q9 Nenhum/Pouco/Moderado 0, Muito/Extremo 1.
+     Total ≤ 3 = baixo risco; total ≥ 4 e subescala Q5–9 ≤ 3 = médio; subescala ≥ 4 = alto. Só com os 9 itens. */
+  if(q === 'sbst'){
+    if(!v.every(ok)) return {sbst:null, sbstPsi:null, sbstRisco:null};
+    const p = v.map((x, i) => i < 8 ? x : (x >= 3 ? 1 : 0)), tot = p.reduce((s, x) => s + x, 0), psi = p.slice(4).reduce((s, x) => s + x, 0);
+    return {sbst:tot, sbstPsi:psi, sbstRisco: tot <= 3 ? 0 : (psi <= 3 ? 1 : 2)};
+  }
+  /* EQ-5D-3L PT (CEISUC): perfil de 5 dígitos (1–3 por dimensão) + EQ VAS 0–100. O índice (value set português) não é calculado aqui. */
+  if(q === 'eq5d'){ const perf = v.slice(0, 5); return {eq5dPerfil: perf.every(ok) ? perf.map(x => x + 1).join('') : null, eq5dVas: ok(v[5]) ? v[5] : null}; }
   if(q === 'alrrsi'){ return {alrrsi: v.every(ok) ? v.reduce((s, x) => s + x, 0) / 120 * 100 : null}; }
   return {};
 }
@@ -158,7 +183,9 @@ const K = 'qfisio.';
 const ROT = {koosDor:'KOOS · Dor', koosSint:'KOOS · Sintomas', koosAVD:'KOOS · AVD', koosDesp:'KOOS · Desporto e recreação', koosQV:'KOOS · Qualidade de vida',
   faosDor:'FAOS · Dor', faosSint:'FAOS · Sintomas', faosAVD:'FAOS · AVD', faosDesp:'FAOS · Desporto e recreação', faosQV:'FAOS · Qualidade de vida',
   faamAvd:'FAAM · AVD (%)', faamDesp:'FAAM · Desporto (%)', lefs:'LEFS (0–80)', dash:'DASH (0–100)', wosi:'WOSI (0–2100)', tsk:'TSK-13 (13–52)', pgic:'PGIC (1–7)',
-  hoosSint:'HOOS · Sintomas', hoosDor:'HOOS · Dor', hoosAVD:'HOOS · AVD', hoosDesp:'HOOS · Desporto e lazer', hoosQV:'HOOS · Qualidade de vida', nahs:'NAHS (0–100)'};
+  hoosSint:'HOOS · Sintomas', hoosDor:'HOOS · Dor', hoosAVD:'HOOS · AVD', hoosDesp:'HOOS · Desporto e lazer', hoosQV:'HOOS · Qualidade de vida', nahs:'NAHS (0–100)',
+  rmdq:'RMDQ (0–24)', sbst:'STarT Back · total (0–9)', sbstPsi:'STarT Back · subescala Q5–9 (0–5)', sbstRisco:'STarT Back · grupo de risco',
+  eq5dPerfil:'EQ-5D-3L · perfil (MO-CP-AH-DM-AD)', eq5dVas:'EQ-5D-3L · EQ VAS (0–100)'};
 const $ = s => document.querySelector(s);
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(v, d){ if(v == null || !isFinite(v)) return '—'; const f = Math.pow(10, d); return (Math.round(v * f) / f).toFixed(d).replace('.', ','); }
@@ -225,7 +252,7 @@ function telaUtente(){
   } else {
     const it = itens(q)[UT.ii], v = r.resp[q][UT.ii], tit = tituloAntes(q, UT.ii);
     h += `<p class="ut-q">${esc(d.nome)} · pergunta ${UT.ii + 1} de ${d.n}</p>${tit ? `<p class="ut-sec">${esc(tit)}</p>` : ''}<h2>${esc(it.txt)}</h2>`;
-    if(d.tipo === 'likert') h += `<div class="ops">${it.ops.map((o, i) => `<button class="op${v === i ? ' on' : ''}" data-a="r" data-v="${i}">${esc(o)}</button>`).join('')}</div>`;
+    if(!vasItem(q, UT.ii)) h += `<div class="ops">${it.ops.map((o, i) => `<button class="op${v === i ? ' on' : ''}" data-a="r" data-v="${i}">${esc(o)}</button>`).join('')}</div>`;
     else h += `<div class="vas"><input type="range" min="0" max="100" step="1" value="${v == null ? 50 : v}" data-vas="1" aria-label="Escala de 0 a 100"><div class="anc"><span>${esc(it.ops[0] || '')}</span><b id="vv">${v != null ? v : 'mova o cursor'}</b><span>${esc(it.ops[1] || '')}</span></div></div>`;
     h += `<div class="nav"><button class="btn grande" data-a="ant">Anterior</button><button class="lnk" data-a="saltar">Prefiro não responder</button><button class="btn pri grande" data-a="seg"${v == null ? ' disabled' : ''}>Seguinte</button></div>`;
   }
@@ -245,7 +272,7 @@ function telaResultado(){
   let h = `<header class="top"><div><b>${esc(r.codigo)}</b> · ${dataPT(r.data)}</div><button class="btn" data-a="inicio">Início</button></header><main class="wrap"><section class="card"><h2>Pontuações</h2><table class="tab"><tbody>`;
   for(const p of pontuacoes(r)){
     h += `<tr><th colspan="2">${QD[p.q].nome} <span class="muted">· ${p.n} de ${p.tot} respondidas</span></th></tr>`;
-    for(const k in p.sc){ const d = PROM_INT.includes(k) ? 0 : 1; h += `<tr><td>${esc(ROT[k] || k)}</td><td class="num">${p.sc[k] != null ? fmt(p.sc[k], d) : '<span class="muted">não cotável (itens em falta)</span>'}</td></tr>`; }
+    for(const k in p.sc){ const d = PROM_INT.includes(k) ? 0 : 1; h += `<tr><td>${esc(ROT[k] || k)}</td><td class="num">${p.sc[k] != null ? (PROM_TXT[k] ? esc(PROM_TXT[k](p.sc[k])) : fmt(p.sc[k], d)) :'<span class="muted">não cotável (itens em falta)</span>'}</td></tr>`; }
   }
   h += `</tbody></table><p class="muted">A cotação é repetida no Mac ao importar o ficheiro, a partir das respostas.</p><div class="nav"><button class="btn perigo" data-a="apagar" data-id="${r.id}">Apagar deste iPad</button><button class="btn pri" data-a="enviar" data-id="${r.id}">Enviar para o Mac</button></div>${r.enviado ? `<p class="muted">Enviado a ${dataPT(r.enviado)}. Depois de o importar no relatório, apague-o daqui.</p>` : ''}</section></main>`;
   return h;
