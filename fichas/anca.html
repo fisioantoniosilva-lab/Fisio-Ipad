@@ -310,9 +310,9 @@ const MODELO = {"id": "anca", "regioes": ["an"], "titulo": "Anca"};
 
 /* ===================== Definições ===================== */
 const G = 9.80665;
-const REG = {jo:'Joelho', tz:'Tornozelo', om:'Ombro', an:'Anca'};
-const REG_TIT = {jo:'Joelho', tz:'Tornozelo e pé', om:'Ombro e cintura escapular', an:'Anca'};
-const ORDEM = ['jo','tz','om','an'];
+const REG = {jo:'Joelho', tz:'Tornozelo', om:'Ombro', an:'Anca', lo:'Lombar'};
+const REG_TIT = {jo:'Joelho', tz:'Tornozelo e pé', om:'Ombro e cintura escapular', an:'Anca', lo:'Coluna lombar'};
+const ORDEM = ['jo','tz','om','an','lo'];
 const FG = {
   kext:   {reg:'jo', nome:'Extensores do joelho',    curto:'extensores do joelho'},
   kflex:  {reg:'jo', nome:'Flexores do joelho',      curto:'flexores do joelho'},
@@ -372,7 +372,13 @@ const PROMS = {
   hoosAVD:  {nome:'HOOS · AVD (0–100) †',                 leg:'HOOS AVD †',         min:0, max:100,  dir:'up'},
   hoosDesp: {nome:'HOOS · Desporto e lazer (0–100) †',    leg:'HOOS Desporto †',    min:0, max:100,  dir:'up'},
   hoosQV:   {nome:'HOOS · Qualidade de vida (0–100) †',   leg:'HOOS Qual. vida †',  min:0, max:100,  dir:'up'},
-  nahs:     {nome:'NAHS (0–100) †',                       leg:'NAHS †',             min:0, max:100,  dir:'up'}
+  nahs:     {nome:'NAHS (0–100) †',                       leg:'NAHS †',             min:0, max:100,  dir:'up'},
+  rmdq:     {nome:'RMDQ (0–24)',                          leg:'RMDQ',               min:0, max:24,   dir:'down'},
+  sbst:     {nome:'STarT Back · total (0–9)',             leg:'STarT total',        min:0, max:9,    dir:'down'},
+  sbstPsi:  {nome:'STarT Back · subescala psicossocial Q5–9 (0–5)', leg:'STarT psicos.', min:0, max:5, dir:'down'},
+  eq5dVas:  {nome:'EQ-5D-3L · EQ VAS (0–100)',             leg:'EQ VAS',             min:0, max:100,  dir:'up'},
+  nprsLo:   {nome:'NPRS lombar · pior dor na última semana (0–10)', leg:'Dor lombar', min:0, max:10, dir:'down'},
+  nprsLoP:  {nome:'NPRS na perna · pior dor na última semana (0–10)', leg:'Dor na perna', min:0, max:10, dir:'down'}
 };
 const KOOS5 = ['koosDor','koosSint','koosAVD','koosDesp','koosQV'];
 const PERFIS_JO = {
@@ -404,6 +410,18 @@ const PERFIS_AN = {
   oa:      {nome:'Osteoartrose da anca / artroplastia', curto:'Osteoartrose da anca', proms:[...HOOS5,'nprsAn'], q:['hoos']},
   outro:   {nome:'Outra condição (especificar)', curto:'Outra condição', proms:[...HOOS5,'nprsAn'], q:['hoos'], outro:true}
 };
+const PERFIS_LO = {
+  inesp:    {nome:'Dor lombar inespecífica',           curto:'Dor lombar inespecífica',  proms:['rmdq','sbst','sbstPsi','nprsLo','nprsLoP']},
+  rad:      {nome:'Dor lombar com radiculopatia',      curto:'Dor lombar com radiculopatia', proms:['rmdq','sbst','sbstPsi','nprsLo','nprsLoP']},
+  estenose: {nome:'Estenose lombar sintomática',       curto:'Estenose lombar',          proms:['rmdq','sbst','sbstPsi','nprsLo','nprsLoP']},
+  poscir:   {nome:'Pós-cirurgia lombar',               curto:'Pós-cirurgia lombar',      proms:['rmdq','sbst','sbstPsi','nprsLo','nprsLoP'], tipoRef:'cirurgia'},
+  outro:    {nome:'Outra condição (especificar)',      curto:'Outra condição',           proms:['rmdq','sbst','sbstPsi','nprsLo','nprsLoP'], outro:true}
+};
+/* sinais de alerta (rastreio; não substituem o juízo clínico) */
+const ALERTA_LO = [['cancro','História de cancro'],['peso','Perda de peso inexplicada'],['febre','Febre, infeção ou imunossupressão'],['trauma','Traumatismo significativo ou osteoporose'],['cauda','Sintomas de cauda equina (anestesia em sela, alterações urinárias ou intestinais)'],['neuro','Défice neurológico progressivo'],['noite','Dor constante, não mecânica ou noturna intensa'],['outro','Outro sinal de alerta']];
+const RISCO_TXT = ['Baixo risco', 'Médio risco', 'Alto risco'];
+const ROTQ = {sbstRisco:'STarT Back · grupo de risco', eq5dPerfil:'EQ-5D-3L · perfil'};
+function fmtQ(k, v, d){ return typeof v === 'string' ? v : (k === 'sbstRisco' ? (RISCO_TXT[v] || '—') : fmt(v, d)); }
 const TT = {
   wblt: {nome:'WBLT', r:'WBLT',          un:'cm',   dec:1, tipo:'dif'},
   sls:  {nome:'Equilíbrio unipodal', r:'Equilíbrio', un:'erros',dec:0, tipo:'nada'},
@@ -444,7 +462,8 @@ let mapaAberto = false;
 function novaAvaliacao(prev){
   return {data:'', massa: prev ? prev.massa : '', braco: prev ? prev.braco : '', bracoJo: prev ? prev.bracoJo : '', angulo: prev ? prev.angulo : '60', forca:{}, media:{},
     t:{wblt:{}, wbltAng:{}, sls:{}, sebt:{ant:{}, pm:{}, pl:{}}, sht:{}, f8:{}, hop:{E:[], D:[]}, heel:{}, ck:[], uq:{med:{}, il:{}, sl:{}}, falha:{}, rri:{}, rre:{}, sq:[], cst:'', clin:''},
-    proms:{}, paass:{}, treino:'', nr:{}, resp:{}, bat:null};
+    proms:{}, paass:{}, treino:'', nr:{}, resp:{}, bat:null,
+    lo:{ext:[], flex:[], bs:'', mcf:'', pl:{}, slr:{}, slrR:{}, slrX:{}, slump:{}, dch:'', schober:'', neuro:'', neuroR:''}};
 }
 function regioesIniciais(){ const o = {}; for(const r of ORDEM) o[r] = MODELO.regioes.includes(r) ? 'sim' : 'nao'; return o; }
 function novoEstado(){
@@ -454,12 +473,14 @@ function novoEstado(){
       jo:{perfil:'lca', lado:'E', tipoRef:'cirurgia', dataRef:'', anca:'sim', compE:'', compD:''},
       tz:{perfil:'entorse', lado:'D', dataRef:'', prevE:'', prevD:'', compE:'', compD:'', historico:''},
       om:{perfil:'instab', lado:'D', dominante:'D', acima:'nao', tipoRef:'lesao', dataRef:'', compE:'', compD:''},
-      an:{perfil:'fais', lado:'D', tipoRef:'sintomas', dataRef:'', rot:'nao', compE:'', compD:''}},
+      an:{perfil:'fais', lado:'D', tipoRef:'sintomas', dataRef:'', rot:'nao', compE:'', compD:''},
+      lo:{perfil:'inesp', fase:'', lado:'', tipoRef:'sintomas', dataRef:'', alerta:{}, alertaObs:''}},
     protocolo:{
       jo:{dispositivo:'Dinamómetro digital', fixacao:'cinta inextensível', posicao:'sentado', tentativas:'3', duracao:'5', repouso:'30'},
       tz:{dispositivo:'Dinamómetro digital', fixacao:'', posicao:'', joelho:'', tentativas:'3', duracao:'5', repouso:'30'},
       om:{dispositivo:'Dinamómetro digital', fixacao:'cinta', posicao:'sentado, cotovelo a 90°, toalha axilar', angElev:'', tentativas:'3', duracao:'5', repouso:'30'},
-      an:{dispositivo:'Dinamómetro digital', fixacao:'cinta inextensível', posicao:'abdução e adução em decúbito dorsal; extensão em decúbito ventral, joelho a 90°; flexão e rotações sentado a 90°', tentativas:'3', duracao:'5', repouso:'30'}},
+      an:{dispositivo:'Dinamómetro digital', fixacao:'cinta inextensível', posicao:'abdução e adução em decúbito dorsal; extensão em decúbito ventral, joelho a 90°; flexão e rotações sentado a 90°', tentativas:'3', duracao:'5', repouso:'30'},
+      lo:{dispositivo:'Dinamómetro de tração (Tindeq Progressor)', fixacao:'cinta', posicao:'', posFlex:'', tentativas:'3', duracao:'5', repouso:'30', resMax:''}},
     config:{verde:'90', amarelo:'80', versao:'Profissional', mdcWblt:'1,0', ankleGo:'nao', evolTz:'sht', pin:'1234', mdcJo:'29', grupoChaveJo:'kext', grupoChaveAn:'an_abd'},
     avaliacoes:[novaAvaliacao()],
     sintomas:{},
@@ -492,11 +513,12 @@ function inv(r){ if(r === 'jo') return S.meta.jo.lado === 'D' ? 'D' : 'E'; retur
 function semLado(r){ return r === 'jo' && S.meta.jo.lado === 'N'; }
 function non(r){ return inv(r) === 'E' ? 'D' : 'E'; }
 function ladoNome(s){ return s === 'E' ? 'esquerdo' : 'direito'; }
-function ladoTxt(r){ if(semLado(r)) return 'sem lado afetado'; return S.meta[r].lado === '' ? 'lado por definir' : ladoNome(inv(r)); }
+function ladoTxt(r){ if(r === 'lo') return ({'':'sem irradiação para a perna', E:'perna esquerda', D:'perna direita', B:'ambas as pernas'})[S.meta.lo.lado || ''] || 'por definir'; if(semLado(r)) return 'sem lado afetado'; return S.meta[r].lado === '' ? 'lado por definir' : ladoNome(inv(r)); }
 /* perfil «Outra condição»: o texto livre substitui o nome no relatório */
 function comOutro(p, r){ if(!p.outro) return p; const t = String((S.meta[r] && S.meta[r].perfilOutro) || '').trim(); return t ? {...p, curto:t, nome:t} : p; }
 function perfilJo(){ return comOutro(PERFIS_JO[S.meta.jo.perfil] || PERFIS_JO.lca, 'jo'); }
-function perfilDe(r){ return r === 'jo' ? perfilJo() : (r === 'tz' ? perfilTz() : (r === 'an' ? perfilAn() : perfilOm())); }
+function perfilLo(){ return comOutro(PERFIS_LO[S.meta.lo.perfil] || PERFIS_LO.inesp, 'lo'); }
+function perfilDe(r){ return r === 'lo' ? perfilLo() : r === 'jo' ? perfilJo() : (r === 'tz' ? perfilTz() : (r === 'an' ? perfilAn() : perfilOm())); }
 function perfilAn(){ return comOutro(PERFIS_AN[S.meta.an.perfil] || PERFIS_AN.fais, 'an'); }
 function perfilTz(){ return comOutro(PERFIS_TZ[S.meta.tz.perfil] || PERFIS_TZ.entorse, 'tz'); }
 function perfilOm(){ return comOutro(PERFIS_OM[S.meta.om.perfil] || PERFIS_OM.instab, 'om'); }
@@ -506,6 +528,7 @@ function promsAtivos(){
   if(ativo('tz')){ l = l.concat(perfilTz().proms); if(S.avaliacoes.some(x => promVal(x, 'faamAvd') != null || promVal(x, 'faamDesp') != null)) l.push('faamAvd', 'faamDesp'); }
   if(ativo('om')){ l = l.concat(perfilOm().proms); if(S.meta.om.acima === 'sim') l.push('kjoc'); }
   if(ativo('an')){ const naBat = q => S.avaliacoes.some(x => x.bat && x.bat.q && x.bat.q[q]); l = l.concat(perfilAn().proms); for(const k of ['nahs','lefs']) if(naBat(k) || S.avaliacoes.some(x => promVal(x, k) != null)) l.push(k); }
+  if(ativo('lo')){ l = l.concat(perfilLo().proms); if(S.avaliacoes.some(x => promVal(x, 'eq5dVas') != null || (x.bat && x.bat.q && x.bat.q.eq5d))) l.push('eq5dVas'); }
   /* TSK-13: opção comum a todas as regiões (na bateria ou já preenchido) */
   if(S.avaliacoes.some(x => promVal(x, 'tsk') != null || (x.bat && x.bat.q && x.bat.q.tsk))) l.push('tsk');
   return [...new Set(l)];
@@ -660,6 +683,15 @@ function metricas(){
     add('t:cst', 'Levantar e sentar em 30 s', ' rep.', 'up', 0, a => num(a.t && a.t.cst));
     if(!ativo('tz')) add('lsi:hop', 'LSI · salto em distância', '%', 'up', 0, a => lsiT(a, 'hop', 'an'), 8.09);
   }
+  if(ativo('lo')){
+    add('lo:ext', 'Força · extensores do tronco', ' kgf', 'up', 1, a => { const x = loF(a, 'ext'); return x ? x.max : null; });
+    add('lo:extpc', 'Força relativa · extensores do tronco', '% PC', 'up', 0, a => loPC(a, 'ext'));
+    add('lo:flex', 'Força · flexores do tronco', ' kgf', 'up', 1, a => { const x = loF(a, 'flex'); return x ? x.max : null; });
+    add('lo:bs', 'Biering-Sørensen', ' s', 'up', 0, a => loN(a, 'bs'));
+    add('lo:mcf', 'Resistência dos flexores (McGill)', ' s', 'up', 0, a => loN(a, 'mcf'));
+    add('lo:pl', 'Ponte lateral · média E/D', ' s', 'up', 0, a => loPlMed(a));
+    add('lo:dch', 'Distância dedos-chão', ' cm', 'down', 1, a => loN(a, 'dch'));
+  }
   for(const k of promsAtivos()) add('p:' + k, PROMS[k].nome.replace(/\s*\([^)]*\)/g, '').replace(/\s*†/g, '').trim(), '', PROMS[k].dir, 0, a => promVal(a, k), PROMS[k].mdc);
   return L;
 }
@@ -688,6 +720,107 @@ function sugestaoEx(e, ai){
 function idNovo(){ return 'o' + Math.random().toString(36).slice(2, 9); }
 function garantirIds(s){ for(const o of (s.plano && s.plano.objetivos) || []) if(!o.id) o.id = idNovo(); return s; }
 
+/* ===================== Lombar: cálculos (sem lado contralateral: sem LSI) ===================== */
+const LO = a => (a && a.lo) || {};
+function loF(a, k){ return stats(LO(a)[k]); }
+function loN(a, k){ return num(LO(a)[k]); }
+function loED(a, k, s){ const o = LO(a)[k]; return o ? num(o[s]) : null; }
+function loPlMed(a){ const e = loED(a, 'pl', 'E'), d = loED(a, 'pl', 'D'); return e != null && d != null ? (e + d) / 2 : null; }
+function loPlRac(a){ const e = loED(a, 'pl', 'E'), d = loED(a, 'pl', 'D'); return e != null && d ? e / d * 100 : null; }
+function loFE(a){ const f = loN(a, 'mcf'), e = loN(a, 'bs'); return f != null && e ? f / e : null; }
+function loFlexExt(a){ const f = loF(a, 'flex'), e = loF(a, 'ext'); return f && e ? f.max / e.max * 100 : null; }
+function loPC(a, k){ const x = loF(a, k), m = num(a && a.massa); return x && m ? x.max / m * 100 : null; }
+function sbstRisco(a){ const t = promVal(a, 'sbst'), p = promVal(a, 'sbstPsi'); if(t == null) return null; if(t <= 3) return 0; if(p == null) return null; return p <= 3 ? 1 : 2; }
+function alertasLo(){ const al = S.meta.lo.alerta || {}; return ALERTA_LO.filter(([k]) => al[k] === 'sim').map(x => x[1]); }
+const LO_RES = {'':'—', neg:'negativo', pos:'positivo'};
+/* variação desde a primeira avaliação com o valor */
+function deltaLo(f, ai){ if(!(ai > 0)) return null; const i0 = primeiraCom(f); if(i0 < 0 || i0 >= ai) return null; const v0 = f(S.avaliacoes[i0]), v = f(S.avaliacoes[ai]); if(v == null || v0 == null) return null; return {d:v - v0, pct: v0 ? (v - v0) / v0 * 100 : null, v0, i0}; }
+function dLoTxt(f, ai, dec, un){ const x = deltaLo(f, ai); return x ? `${fmtSigned(x.d, dec)}${un || ''}` : '—'; }
+function forcaLo(a, ai, compacto){
+  const pre = `<div class="trow head"><span>Medida</span><span class="num">Atual</span><span class="num">${ai > 0 ? 'Inicial' : ''}</span><span>Relativo</span><span class="num">Δ</span></div>`;
+  let h = '', n = 0;
+  const tit = compacto ? '' : `<h2 class="r-h2">Força e resistência do tronco</h2>`;
+  const v0 = f => { const i0 = primeiraCom(f); return ai > 0 && i0 >= 0 && i0 < ai ? f(S.avaliacoes[i0]) : null; };
+  for(const [k, nome] of [['ext','Extensores do tronco'], ['flex','Flexores do tronco']]){
+    const f = y => { const x = loF(y, k); return x ? x.max : null; }, v = f(a); if(v == null) continue; n++;
+    const pc = loPC(a, k), x0 = v0(f);
+    h += testeLinha(`${nome} <span class="r-muted">kgf</span>`, fmt(v, 1), x0 != null ? fmt(x0, 1) : '', pc != null ? `<span style="font-size:12px">${fmt(pc, 0)}% PC</span>` : '—', dLoTxt(f, ai, 1));
+  }
+  for(const [k, nome] of [['bs','Biering-Sørensen'], ['mcf','Flexores (McGill)']]){
+    const f = y => loN(y, k), v = f(a); if(v == null) continue; n++; const x0 = v0(f);
+    h += testeLinha(`${nome} <span class="r-muted">s</span>`, fmt(v, 0), x0 != null ? fmt(x0, 0) : '', '—', dLoTxt(f, ai, 0));
+  }
+  if(loED(a, 'pl', 'E') != null || loED(a, 'pl', 'D') != null){
+    n++; const x0 = v0(loPlMed), r = loPlRac(a);
+    h += testeLinha('Ponte lateral E / D <span class="r-muted">s</span>', `${fmt(loED(a, 'pl', 'E'), 0)} / ${fmt(loED(a, 'pl', 'D'), 0)}`, x0 != null ? 'média ' + fmt(x0, 0) : '', r != null ? `<span style="font-size:12px">E/D ${fmt(r, 0)}%</span>` : '—', dLoTxt(loPlMed, ai, 0));
+  }
+  if(!n) return tit + `<div class="empty">Sem força ou resistência do tronco nesta avaliação.</div>`;
+  const rr = [];
+  const fe = loFE(a); if(fe != null) rr.push(`flexores/extensores (resistência) ${fmt(fe, 2)}`);
+  const fx = loFlexExt(a); if(fx != null) rr.push(`flexores/extensores (força) ${fmt(fx, 0)}%`);
+  const pb = loPlMed(a), bs = loN(a, 'bs'); if(pb != null && bs) rr.push(`ponte lateral/extensores ${fmt(pb / bs, 2)}`);
+  return tit + pre + h + (rr.length ? `<span class="r-small">Rácios (descritivos, sem limiar validado neste protocolo): ${esc(rr.join(' · '))}.</span>` : '');
+}
+function testesLo(a, ai){
+  const L0 = LO(a); let h = '', n = 0;
+  const pre = `<div class="trow head"><span>Teste</span><span class="num">E</span><span class="num">D</span><span>Resultado</span><span class="num">Δ</span></div>`;
+  for(const [k, nome, un] of [['dch','Distância dedos-chão','cm'], ['schober','Schober modificado','cm']]){
+    const f = y => loN(y, k), v = f(a); if(v == null) continue; n++;
+    h += testeLinha(`${nome} <span class="r-muted">${un}</span>`, fmt(v, 1), '<span class="r-muted">—</span>', '—', dLoTxt(f, ai, 1));
+  }
+  const rs = (o, s) => o && o[s] ? ({neg:'neg.', pos:'pos.'})[o[s]] || o[s] : '';
+  if(['E','D'].some(s => loED(a, 'slr', s) != null || (L0.slrR && L0.slrR[s]))){ n++;
+    const c = s => [loED(a, 'slr', s) != null ? fmt(loED(a, 'slr', s), 0) + '°' : '', rs(L0.slrR, s)].filter(Boolean).join(' ') || '—';
+    h += testeLinha('SLR', c('E'), c('D'), '—', '—'); }
+  if(['E','D'].some(s => L0.slrX && L0.slrX[s])){ n++; h += testeLinha('SLR cruzado', rs(L0.slrX, 'E') || '—', rs(L0.slrX, 'D') || '—', '—', '—'); }
+  if(['E','D'].some(s => L0.slump && L0.slump[s])){ n++; h += testeLinha('Slump test', rs(L0.slump, 'E') || '—', rs(L0.slump, 'D') || '—', '—', '—'); }
+  let out = n ? pre + h : '';
+  if(L0.neuroR || L0.neuro) out += `<span class="r-small"><b>Rastreio neurológico:</b> ${esc([L0.neuroR === 'alt' ? 'alterado' : (L0.neuroR === 'normal' ? 'sem alterações' : ''), L0.neuro].filter(Boolean).join(' · '))}</span>`;
+  if(n) out += `<span class="r-small">SLR: ângulo ao início dos sintomas; pos./neg. = reprodução dos sintomas. Testes neurodinâmicos sem valor diagnóstico isolado.</span>`;
+  return out;
+}
+function extrasLo(a){
+  let h = '';
+  const r = sbstRisco(a), t = promVal(a, 'sbst'), p = promVal(a, 'sbstPsi');
+  if(r != null) h += `<span class="r-small"><b>STarT Back:</b> ${RISCO_TXT[r].toLowerCase()} (total ${fmt(t, 0)}/9${p != null ? `; psicossocial ${fmt(p, 0)}/5` : ''}) · estratificação do prognóstico, não diagnóstico.</span>`;
+  const eq = a.proms && a.proms.eq5dPerfil, ev = promVal(a, 'eq5dVas');
+  if(eq || ev != null) h += `<span class="r-small"><b>EQ-5D-3L:</b> ${eq ? 'perfil ' + esc(eq) + ' (1 = sem problemas)' : ''}${eq && ev != null ? ' · ' : ''}${ev != null ? 'EQ VAS ' + fmt(ev, 0) + '/100' : ''}.</span>`;
+  const fase = {aguda:'aguda (< 6 semanas)', subaguda:'subaguda (6–12 semanas)', cronica:'crónica (> 12 semanas)'}[S.meta.lo.fase];
+  if(fase) h += `<span class="r-small"><b>Duração dos sintomas:</b> ${fase}.</span>`;
+  if(S.config.versao !== 'Utente'){ const al = alertasLo(); h += al.length ? `<span class="r-small" style="color:#a32020"><b>Sinais de alerta assinalados:</b> ${esc(al.join('; '))}${S.meta.lo.alertaObs ? ' · ' + esc(S.meta.lo.alertaObs) : ''}. Decidir a referenciação conforme o juízo clínico.</span>` : `<span class="r-small"><b>Sinais de alerta:</b> nenhum assinalado no rastreio.</span>`; }
+  return h;
+}
+function evolLo(){
+  const av = S.avaliacoes, rel = f => { const i0 = primeiraCom(f); return av.map(y => { const v = f(y), b = i0 >= 0 ? f(av[i0]) : null; return v != null && b ? v / b * 100 : null; }); };
+  const ss = [{lab:'Extensores (força)', vals:rel(y => { const x = loF(y, 'ext'); return x ? x.max : null; })}, {lab:'Biering-Sørensen', vals:rel(y => loN(y, 'bs'))}, {lab:'Ponte lateral (média)', vals:rel(loPlMed)}]
+    .map(s => ({...s, pts:s.vals.map((v, i) => ({i, v})).filter(p => p.v != null)})).filter(s => s.pts.length >= 2);
+  let h = `<h2 class="r-h2" style="margin-top:6px">Evolução em relação à avaliação inicial (%)</h2>`;
+  if(!ss.length) return h + `<span class="r-small">Aparece a partir da primeira reavaliação com os mesmos testes.</span>`;
+  h += `<div style="display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--ink2)">${ss.map((s, k) => `<span class="leg"><span class="sw2" style="background:${SERIES[k]};height:3px;width:14px;border-radius:2px"></span>${esc(s.lab)}</span>`).join('')}</div>`;
+  const W = 350, H = 104, x0 = 34, x1 = 312, y0 = 8, y1 = H - 22, n = av.length, X = i => x0 + 14 + i / Math.max(1, n - 1) * (x1 - x0 - 28);
+  const all = ss.flatMap(s => s.pts.map(p => p.v)), yLo = Math.min(80, Math.floor(Math.min(...all) / 10) * 10), yHi = Math.max(120, Math.ceil(Math.max(...all) / 10) * 10), Y = v => y1 - (v - yLo) / (yHi - yLo) * (y1 - y0);
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução em relação à avaliação inicial">`;
+  for(const t of [yLo, 100, yHi]) s += `<text x="${x0-5}" y="${(Y(t)+4).toFixed(1)}" font-size="12" fill="#5f6f7b" text-anchor="end">${fmt(t,0)}</text>`;
+  s += `<line x1="${x0}" y1="${Y(100).toFixed(1)}" x2="${x1}" y2="${Y(100).toFixed(1)}" stroke="#b3c0c7" stroke-dasharray="3 3"/><line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}" stroke="#b3c0c7"/>`;
+  const fins = [];
+  ss.forEach((se, k) => { s += `<polyline points="${se.pts.map(p => X(p.i).toFixed(1) + ',' + Y(p.v).toFixed(1)).join(' ')}" fill="none" stroke="${SERIES[k]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`; for(const p of se.pts) s += `<circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="4" fill="${SERIES[k]}" stroke="#fff" stroke-width="1.6"/>`; const l = se.pts[se.pts.length - 1]; fins.push({x:X(l.i), y:Y(l.v), v:l.v, c:SERIES[k]}); });
+  fins.sort((p, q) => p.y - q.y); for(let i = 1; i < fins.length; i++) if(fins[i].y - fins[i-1].y < 13) fins[i].y = fins[i-1].y + 13;
+  for(const f of fins) s += `<text x="${(f.x + 8).toFixed(1)}" y="${(f.y + 4).toFixed(1)}" font-size="12" font-weight="600" fill="${f.c}">${fmt(f.v,0)}%</text>`;
+  for(let i = 0; i < n; i++) s += `<text x="${X(i).toFixed(1)}" y="${y1 + 16}" font-size="12" fill="#4a5d6b" text-anchor="middle">${esc(rotulo(i))}</text>`;
+  return h + s + `</svg><span class="r-small">100% = primeira avaliação com o teste.</span>`;
+}
+function colunaLo(a, ai){
+  const w = semanaR(a, 'lo');
+  return `<div class="col"><h2 class="r-h2">Coluna lombar · ${esc(ladoTxt('lo'))}${w != null ? ` · semana ${w}` : ''}</h2>` + forcaLo(a, ai, true) + testesLo(a, ai) + naoRealizados(a, 'lo') + extrasLo(a) + `</div>`;
+}
+function calcLoTxt(){
+  const a = S.avaliacoes[tab], p = [];
+  for(const [k, n] of [['ext','extensores'], ['flex','flexores']]){ const x = loF(a, k); if(x) p.push(`${n} máx. ${fmt(x.max,1)} kgf${loPC(a, k) != null ? ` (${fmt(loPC(a, k),0)}% PC)` : ''}${x.cv != null && x.cv > 10 ? ` · CV ${fmt(x.cv,0)}%` : ''}`); }
+  const fe = loFE(a); if(fe != null) p.push(`flexores/extensores (resistência) ${fmt(fe,2)}`);
+  const pr = loPlRac(a); if(pr != null) p.push(`ponte lateral E/D ${fmt(pr,0)}%`);
+  const r = sbstRisco(a); if(r != null) p.push(`STarT Back: ${RISCO_TXT[r].toLowerCase()}`);
+  return p.join(' · ') || 'Os cálculos aparecem à medida que preenche.';
+}
 /* ===================== Ícones ===================== */
 const ICON_OK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>';
 const ICON_WARN = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4L21 19H3Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>';
@@ -764,6 +897,7 @@ const ZONAS_ANCA = ['anca_ing','anca_lat','anca_pl','nadega'];
 const ZONA_FORCA = {kext:['coxa_ant_p','coxa_ant_d'], kflex:['coxa_post_p','coxa_post_d'], hadd:['coxa_med'], habd:['anca_lat','anca_pl'], hext:['nadega']};
 const ZONA_FORCA_AN = {an_add:['coxa_med'], an_abd:['anca_lat','anca_pl'], an_ext:['nadega'], an_flex:['anca_ing']};
 const ZONAS_AN = ['anca_ing','anca_lat','anca_pl','nadega','coxa_med','coxa_ant_p','coxa_post_p','si'];
+const ZONAS_LO = ['lombar','sacro','si','nadega','coxa_post_p','coxa_post_d','fossa','gemeos','perna_ant','pe','calcanhar','anca_lat','coxa_ant_p'];
 const ZONAS_OM = ['clav','ombro_ac','ombro_lat','ombro_ant','braco','trap','supra','ombro_post','esc_med','esc_inf'];
 function zonaNome(id){ const z = ZN[id]; if(!z) return id; return z.lado === 'M' ? z.nome : `${z.nome} ${z.lado}`; }
 function sintoma(id){ const v = S.sintomas[id]; if(!v) return {e:'na'}; return typeof v === 'string' ? {e:v} : v; }
@@ -861,6 +995,7 @@ function forcaRows(r, a, ai){
 }
 /* Força a toda a largura (região única) */
 function forcaLarga(r, a, ai){
+  if(r === 'lo') return forcaLo(a, ai);
   const gs = GRV(r).filter(g => { const x = gf(a, g); return x.E || x.D; });
   const sl = semLado(r), si = inv(r), sn = non(r), massa = num(a.massa);
   const i0g = ai > 0 ? Math.min(...gs.map(g => primeiraCom(y => gf(y, g)[si])).filter(i => i >= 0 && i < ai)) : Infinity;
@@ -1024,7 +1159,7 @@ function colunaAn(a, ai){
   h += forcaRows('an', a, ai) + linhaRacioAA(a) + mediaLinha('an', a) + testesAn(a, ai) + evolBloco('an') + naoRealizados(a, 'an');
   return h + `</div>`;
 }
-function coluna(r, a, ai){ return r === 'jo' ? colunaJo(a, ai) : (r === 'tz' ? colunaTz(a, ai) : (r === 'an' ? colunaAn(a, ai) : colunaOm(a, ai))); }
+function coluna(r, a, ai){ return r === 'lo' ? colunaLo(a, ai) : r === 'jo' ? colunaJo(a, ai) : (r === 'tz' ? colunaTz(a, ai) : (r === 'an' ? colunaAn(a, ai) : colunaOm(a, ai))); }
 function naoRealizados(a, r){
   const l = Object.keys(a.nr || {}).filter(id => a.nr[id] && TS[id] && tsRegs(TS[id]).includes(r)).map(id => `${TS[id].nome.replace(REG[r] + ' · ', '').replace(/^Dor n[oa] (joelho|tornozelo|ombro|anca) \(NPRS\)$/, 'NPRS')} (${NR_TXT[a.nr[id]] || a.nr[id]})`);
   return l.length ? `<span class="r-small">Não realizados: ${esc(l.join(', '))}.</span>` : '';
@@ -1085,6 +1220,7 @@ function seriesEvol(r){
   return [{lab:'Rotação externa a 0°', vals:av.map(y => lsiF(y, 'om_re0'))}, {lab:'Rotação interna a 0°', vals:av.map(y => lsiF(y, 'om_ri0'))}];
 }
 function evolLarga(r){
+  if(r === 'lo') return evolLo();
   const ss = seriesEvol(r).map(s => ({...s, pts:s.vals.map((v, i) => ({i, v})).filter(p => p.v != null)})).filter(s => s.pts.length >= 2);
   let h = `<h2 class="r-h2" style="margin-top:6px">Evolução da simetria (${semLado(r) ? 'rácio E/D' : 'LSI'})</h2>`;
   if(!ss.length) return h + `<span class="r-small">Aparece a partir da primeira reavaliação com os mesmos testes.</span>`;
@@ -1148,6 +1284,12 @@ function kpisRegiao(r, a, ai, n){
     if(tem(hk) || (!tem('nahs') && !tem('lefs'))) out.push(kProm(hk, pf === 'oa' ? 'HOOS · AVD' : 'HOOS · Desporto e lazer', '/100'));
     else if(tem('nahs')) out.push(kProm('nahs', 'Função da anca (NAHS)', '/100'));
     else out.push(kProm('lefs', 'Função global (LEFS)', '/80'));
+  } else if(r === 'lo'){
+    const x = loF(a, 'ext'), pc = loPC(a, 'ext'), dx = deltaLo(y => { const z = loF(y, 'ext'); return z ? z.max : null; }, ai);
+    out.push(kpi('Extensores do tronco', x ? `${fmt(x.max,1)}<span class="u"> kgf</span>` : '—', pc != null ? `${fmt(pc,0)}% do peso corporal` : 'Isométrica, dinamómetro de tração', dx ? chipDelta(`${fmtSigned(dx.pct,0)}% desde ${rotulo(dx.i0)}`, false) : ini));
+    const b = loN(a, 'bs'), db = deltaLo(y => loN(y, 'bs'), ai);
+    out.push(kpi('Biering-Sørensen', b != null ? `${fmt(b,0)}<span class="u"> s</span>` : '—', 'Resistência dos extensores', db ? chipDelta(`${fmtSigned(db.d,0)} s desde ${rotulo(db.i0)}`, false) : ini));
+    out.push(kProm('rmdq', 'Incapacidade (RMDQ)', '/24'));
   } else {
     out.push(kForca('om_re0', `Rot. externa · ombro ${si}`));
     out.push(kForca('om_ri0', `Rot. interna · ombro ${si}`));
@@ -1164,7 +1306,8 @@ function cartaoDor(regs, a, n){
     if(r === 'tz') c += dl('No desporto', 'nprsTzD') + dl('Últimas 24 h', 'nprsTz24');
     if(r === 'om') c += dl('Pior dor · semana', 'nprsOm');
     if(r === 'an') c += dl('Pior dor · semana', 'nprsAn');
-  } else for(const r of regs) c += dl(REG[r], {jo:'nprsJo', tz:'nprsTzD', om:'nprsOm', an:'nprsAn'}[r]);
+    if(r === 'lo') c += dl('Lombar · semana', 'nprsLo') + dl('Perna · semana', 'nprsLoP');
+  } else for(const r of regs) c += dl(REG[r], {jo:'nprsJo', tz:'nprsTzD', om:'nprsOm', an:'nprsAn', lo:'nprsLo'}[r]);
   return c + `</div>`;
 }
 function cabecalho(regs, a, n){
@@ -1177,7 +1320,7 @@ function cabecalho(regs, a, n){
   const refNome = r => ({cirurgia:'Cirurgia', lesao:'Lesão', sintomas:'Início dos sintomas'})[r === 'tz' ? 'lesao' : (S.meta[r].tipoRef || 'lesao')];
   if(regs.length === 1){
     const r = regs[0], w = semanaR(a, r);
-    idf.push(['Perfil clínico', perfilDe(r).curto], ['Lado envolvido', ladoTxt(r)[0].toUpperCase() + ladoTxt(r).slice(1)]);
+    idf.push(['Perfil clínico', perfilDe(r).curto], [r === 'lo' ? 'Sintomas na perna' : 'Lado envolvido', ladoTxt(r)[0].toUpperCase() + ladoTxt(r).slice(1)]);
     if(S.meta[r].dataRef) idf.push([refNome(r), dataPT(S.meta[r].dataRef) + (w != null ? ` · sem. ${w}` : '')]);
   } else for(const r of regs) idf.push([REG[r], `${perfilDe(r).curto} · ${ladoTxt(r)}`]);
   idf.push(['Data da avaliação', dataPT(a.data)], ['Massa', num(a.massa) != null ? fmt(num(a.massa),1) + ' kg' : '—']);
@@ -1239,8 +1382,10 @@ function rodapePagina1(regs, a){
   else if(has('om') && comps) p.push(`UQ-YBT em % do comprimento do membro (${esc(comps)}).`);
   if(has('om')) p.push('CKCUEST: 91,4 cm, 15 s, média de 3. NPRS do ombro: pior dor na semana.');
   if(has('an')){ const q = []; if(S.avaliacoes.some(x => racioAA(x, 'E') != null || racioAA(x, 'D') != null)) q.push('rácio adutores/abdutores'); if(S.avaliacoes.some(x => sqMax(x) != null)) q.push('squeeze a 45° (máx.)'); if(S.avaliacoes.some(x => tv(x, 'rri', 'E') != null || tv(x, 'rre', 'E') != null)) q.push('rotações a 90° (inclinómetro)'); if(q.length) p.push(`Anca: ${q.join(', ')}: descritivos.`); }
+  if(has('lo')) p.push(`Lombar: extensores ${esc(S.protocolo.lo.posicao || 'posição por registar')}; flexores ${esc(S.protocolo.lo.posFlex || 'posição por registar')}. Resistência até à falha${S.protocolo.lo.resMax ? ` (máx. ${esc(S.protocolo.lo.resMax)} s)` : ''}. NPRS: pior dor na semana.`);
   if(regs.some(r => S.avaliacoes.some(x => temMedia(r, x)))) p.push('Média da contração: média da força em cada tentativa de 5 s, incluindo a subida; descritiva, sem MDC e fora dos critérios dos objetivos.');
   let f = `<b style="color:var(--ink)">Fórmulas e variações.</b> ${has('jo') && semLado('jo') ? 'Rácio E/D = E ÷ D × 100' : 'LSI = envolvido ÷ não envolvido × 100'}${has('tz') ? '; nos testes em tempo, não envolvido ÷ envolvido' : ''}.`;
+  if(regs.length === 1 && has('lo')) f = '<b style="color:var(--ink)">Fórmulas e variações.</b>';
   if(has('jo')){
     f += ' %PC = kgf ÷ kg × 100. Torque = kgf × 9,80665 × braço de momento (m).';
     const g = S.config.grupoChaveJo || 'kext', x = gf(a, g)[inv('jo')], b = num(a.bracoJo), m = num(a.massa);
@@ -1258,7 +1403,8 @@ function rodapePagina1(regs, a){
   if(has('tz') || has('om')) f += ` Força do ${[has('tz') ? 'tornozelo' : '', has('om') ? 'ombro' : ''].filter(Boolean).join(' e do ')} sem ◆ até haver reteste interno.`;
   { const sm = [['tsk','TSK-13 (só com os 13 itens)'], ['hoosDor','HOOS'], ['nahs','NAHS (só com os 20 itens)']].filter(([k]) => S.avaliacoes.some(x => promVal(x, k) != null)).map(x => x[1]); if(sm.length) f += ` ${sm.join(', ')}: sem MDC PT-PT.`; }
   if(S.avaliacoes.indexOf(a) > 0 && pgicTxt(a)) f += ' PGIC: a opção 1 junta «sem alterações» e «piorou» (não deteta agravamento); sem ◆.';
-  f += ' Faixas do LSI convencionais.';
+  if(has('lo')) f += ' Tronco: %PC = kgf ÷ kg × 100; flexores/extensores = tempo McGill ÷ tempo Biering-Sørensen; ponte lateral E/D = E ÷ D × 100; sem ◆ até haver reteste interno. RMDQ, STarT Back e EQ-5D-3L sem MDC PT-PT; índice EQ-5D não calculado.';
+  if(!(regs.length === 1 && has('lo'))) f += ' Faixas do LSI convencionais.';
   if(has('tz')) f += ' PAASS: estado definido pelo fisioterapeuta (o consenso não tem limiares).';
   f += ' Nenhum resultado isolado decide alta ou regresso ao desporto.';
   p.push(f);
@@ -1271,15 +1417,17 @@ function renderPagina1(){
   if(regs.length === 1){
     const r = regs[0];
     h += `<section class="r-sec" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">${kpisRegiao(r, a, ai, n).join('')}${cartaoDor(regs, a, n)}</section>`;
-    h += `<section class="r-sec col" style="gap:2px">${forcaLarga(r, a, ai)}</section>`;
+    if(r !== 'lo') h += `<section class="r-sec col" style="gap:2px">${forcaLarga(r, a, ai)}</section>`;
     let esq = '';
     if(r === 'tz') esq += `<h2 class="r-h2">Mobilidade, equilíbrio e testes funcionais</h2>` + testesTz(a, ai);
     if(r === 'om') esq += `<h2 class="r-h2">Testes funcionais</h2>` + testesOm(a, ai);
     if(r === 'jo'){ const tj = testesJo(a, ai); if(tj) esq += `<h2 class="r-h2">Equilíbrio dinâmico</h2>` + tj; }
     if(r === 'an'){ const ta = testesAn(a, ai); if(ta) esq += `<h2 class="r-h2">Mobilidade e testes funcionais</h2>` + ta; }
-    let dir = (r === 'jo' || r === 'an') ? blocoMapaJo(r) : blocoMapa(r === 'tz' ? 120 : 150);
-    if(r === 'tz') dir += evolLarga(r); else esq += evolLarga(r);
+    if(r === 'lo'){ esq += forcaLo(a, ai); const tl = testesLo(a, ai); if(tl) esq += `<h2 class="r-h2" style="margin-top:6px">Mobilidade e testes neurodinâmicos</h2>` + tl; }
+    let dir = (r === 'jo' || r === 'an') ? blocoMapaJo(r) : blocoMapa(r === 'tz' || r === 'lo' ? 120 : 150);
+    if(r === 'tz' || r === 'lo') dir += evolLarga(r); else esq += evolLarga(r);
     esq += naoRealizados(a, r) + extrasRegiao(r);
+    if(r === 'lo') dir += extrasLo(a);
     h += `<section class="r-sec" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px"><div class="col">${esq}</div><div class="col">${dir}</div></section>`;
   } else {
     const [r1, r2] = regs, k1 = kpisRegiao(r1, a, ai, n), k2 = kpisRegiao(r2, a, ai, n);
@@ -1493,6 +1641,19 @@ function buildEditor(){
     h += fld('Comprimento do membro E / D (cm, EIAS–maléolo medial; só para o SEBT)', `<div style="display:flex;gap:6px">${inp('meta.an.compE', 'inputmode="decimal" aria-label="Comprimento do membro inferior E"')}${inp('meta.an.compD', 'inputmode="decimal" aria-label="Comprimento do membro inferior D"')}</div>`, 'full');
     h += `</div><p class="hint">Questionários do perfil: ${esc(perfilAn().q.map(q => QD[q].nome).join(' + '))}; TSK-13 opcional; PGIC nas reavaliações.</p></details>`;
   }
+  if(ativo('lo')){
+    h += `<details class="sec" open><summary>Coluna lombar · episódio</summary><div class="fields">`;
+    h += fld('Perfil clínico', sel('meta.lo.perfil', Object.entries(PERFIS_LO).map(([k, p]) => [k, p.nome]), ST), 'full');
+    if(S.meta.lo.perfil === 'outro') h += fld('Qual a condição clínica? (aparece no relatório)', inp('meta.lo.perfilOutro', 'placeholder="Escreva a condição clínica" autocomplete="off"'), 'full');
+    h += fld('Duração dos sintomas', sel('meta.lo.fase', [['','—'],['aguda','Aguda (< 6 semanas)'],['subaguda','Subaguda (6–12 semanas)'],['cronica','Crónica (> 12 semanas)']]));
+    h += fld('Sintomas na perna', sel('meta.lo.lado', [['','Sem irradiação para a perna'],['E','Perna esquerda'],['D','Perna direita'],['B','Ambas as pernas']], ST));
+    h += fld('Referência temporal', sel('meta.lo.tipoRef', [['sintomas','Início dos sintomas'],['lesao','Data da lesão'],['cirurgia','Data da cirurgia']]));
+    h += fld('Data de referência', inp('meta.lo.dataRef', 'type="date"'));
+    h += `<div class="f full lbl" style="font-weight:600;color:var(--navy)">Sinais de alerta · rastreio</div>`;
+    for(const [k, t] of ALERTA_LO) h += fld(esc(t), sel(`meta.lo.alerta.${k}`, [['','Não'],['sim','Sim']]));
+    h += fld('Observações sobre os sinais de alerta', inp('meta.lo.alertaObs'), 'full');
+    h += `</div><p class="hint">Questionários do perfil: RMDQ (incapacidade funcional) + STarT Back (risco de mau prognóstico) + NPRS lombar e na perna; EQ-5D-3L e TSK-13 opcionais; PGIC nas reavaliações. Os sinais de alerta só aparecem na versão profissional.</p></details>`;
+  }
   h += `<details class="sec"><summary>Protocolos e configuração</summary><div class="fields">`;
   if(jo){
     h += `<div class="f full lbl" style="font-weight:600;color:var(--navy)">Dinamometria do joelho e da anca</div>`;
@@ -1531,6 +1692,16 @@ function buildEditor(){
     h += fld('Duração (s) / repouso (s)', `<div style="display:flex;gap:6px">${inp('protocolo.an.duracao', 'inputmode="decimal" aria-label="Duração"')}${inp('protocolo.an.repouso', 'inputmode="decimal" aria-label="Repouso"')}</div>`);
     if(!jo) h += fld('◆ da força da anca (MDC, %)', inp('config.mdcJo', 'inputmode="decimal"'));
     h += fld('Grupo-chave da anca (cartão e linha de evolução)', sel('config.grupoChaveAn', ['an_abd','an_add','an_ext','an_flex'].map(g => [g, FG[g].nome])));
+  }
+  if(ativo('lo')){
+    h += `<div class="f full lbl" style="font-weight:600;color:var(--navy)">Força e resistência do tronco</div>`;
+    h += fld('Dinamómetro', inp('protocolo.lo.dispositivo'));
+    h += fld('Fixação', inp('protocolo.lo.fixacao'));
+    h += fld('Posição · extensores do tronco', inp('protocolo.lo.posicao', 'placeholder="em pé, bacia fixa, cinta ao nível da omoplata"'), 'full');
+    h += fld('Posição · flexores do tronco', inp('protocolo.lo.posFlex'), 'full');
+    h += fld('Tentativas (1–6)', inp('protocolo.lo.tentativas', 'type="number" min="1" max="6" step="1" ' + ST));
+    h += fld('Duração (s) / repouso (s)', `<div style="display:flex;gap:6px">${inp('protocolo.lo.duracao', 'inputmode="decimal" aria-label="Duração"')}${inp('protocolo.lo.repouso', 'inputmode="decimal" aria-label="Repouso"')}</div>`);
+    h += fld('Tempo máximo dos testes de resistência (s; vazio = até à falha)', inp('protocolo.lo.resMax', 'inputmode="numeric"'));
   }
   h += `<div class="f full lbl" style="font-weight:600;color:var(--navy)">Questionários do utente</div>`;
   h += fld('Código de saída do modo utente (4 dígitos)', inp('config.pin', 'inputmode="numeric" maxlength="4"'));
@@ -1604,6 +1775,24 @@ function buildEditor(){
     h += linhaED('Medial', ap + '.t.uq.med') + linhaED('Inferolateral', ap + '.t.uq.il') + linhaED('Superolateral', ap + '.t.uq.sl');
     h += `</tbody></table><div class="calcline" id="calc-om">${esc(calcOmTxt())}</div>`;
   }
+  if(ativo('lo')){
+    const nt = nT('lo');
+    h += `<div class="subt">Tronco · dinamometria isométrica (kgf)</div><table class="tbl"><thead><tr><th>Grupo</th>${Array.from({length:nt}, (_, t) => `<th style="text-align:right">${t + 1}</th>`).join('')}</tr></thead><tbody>`;
+    for(const [k, n] of [['ext','Extensores do tronco'], ['flex','Flexores do tronco']]) h += `<tr><td class="g">${n}</td>${Array.from({length:nt}, (_, t) => `<td>${inp(`${ap}.lo.${k}.${t}`, 'inputmode="decimal" aria-label="' + n + ' ' + (t + 1) + '"')}</td>`).join('')}</tr>`;
+    h += `</tbody></table><div class="subt">Tronco · resistência (s)</div><div class="fields">`;
+    h += fld('Biering-Sørensen (extensores)', inp(ap + '.lo.bs', 'inputmode="decimal"')) + fld('Flexores (McGill, 60°)', inp(ap + '.lo.mcf', 'inputmode="decimal"'));
+    h += fld('Ponte lateral E / D', `<div style="display:flex;gap:6px">${inp(ap + '.lo.pl.E', 'inputmode="decimal" aria-label="Ponte lateral E"')}${inp(ap + '.lo.pl.D', 'inputmode="decimal" aria-label="Ponte lateral D"')}</div>`);
+    h += `</div><div class="subt">Lombar · mobilidade, testes neurodinâmicos e rastreio neurológico</div><div class="fields">`;
+    h += fld('Distância dedos-chão (cm)', inp(ap + '.lo.dch', 'inputmode="decimal"')) + fld('Schober modificado (cm)', inp(ap + '.lo.schober', 'inputmode="decimal"'));
+    h += fld('SLR · ângulo ao início dos sintomas E / D (°)', `<div style="display:flex;gap:6px">${inp(ap + '.lo.slr.E', 'inputmode="numeric" aria-label="SLR E"')}${inp(ap + '.lo.slr.D', 'inputmode="numeric" aria-label="SLR D"')}</div>`);
+    h += fld('SLR · resultado E / D', `<div style="display:flex;gap:6px">${sel(ap + '.lo.slrR.E', [['','—'],['neg','Negativo'],['pos','Positivo']])}${sel(ap + '.lo.slrR.D', [['','—'],['neg','Negativo'],['pos','Positivo']])}</div>`);
+    h += fld('SLR cruzado · perna testada E / D', `<div style="display:flex;gap:6px">${sel(ap + '.lo.slrX.E', [['','—'],['neg','Negativo'],['pos','Positivo']])}${sel(ap + '.lo.slrX.D', [['','—'],['neg','Negativo'],['pos','Positivo']])}</div>`);
+    h += fld('Slump test E / D', `<div style="display:flex;gap:6px">${sel(ap + '.lo.slump.E', [['','—'],['neg','Negativo'],['pos','Positivo']])}${sel(ap + '.lo.slump.D', [['','—'],['neg','Negativo'],['pos','Positivo']])}</div>`);
+    h += fld('Rastreio neurológico (miótomos, reflexos, sensibilidade)', sel(ap + '.lo.neuroR', [['','—'],['normal','Sem alterações'],['alt','Alterado']]));
+    h += fld('Achados neurológicos (texto)', inp(ap + '.lo.neuro', 'placeholder="ex.: reflexo aquiliano D diminuído"'), 'full');
+    h += fld('EQ-5D-3L · perfil (5 dígitos, se preenchido em papel)', inp(ap + '.proms.eq5dPerfil', 'inputmode="numeric" maxlength="5" placeholder="11221"'));
+    h += `</div><div class="calcline" id="calc-lo">${esc(calcLoTxt())}</div>`;
+  }
   h += `<div class="subt">Questionários e dor</div><div class="fields">`;
   { const vistos = new Set(); for(const k of promsAtivos()){ const f = famQ(k), d = !vistos.has(f) && descQ(k); vistos.add(f);
     h += fld(esc(PROMS[k].nome) + (d ? ` <span style="font-weight:400;color:var(--muted)">(${esc(d)})</span>` : ''), inp(`${ap}.proms.${k}`, 'inputmode="decimal"')); } }
@@ -1629,7 +1818,7 @@ function buildEditor(){
     h += fld('Observações', inp(zp + '.obs'), 'full');
     h += `</div>`;
   }
-  h += `<div class="btnrow" style="margin-top:8px">${jo ? `<button type="button" class="btn small" data-act="ok-jo">Restantes zonas do joelho${S.meta.jo.anca === 'sim' ? ' e da anca' : ''}: sem sintomas</button>` : ''}${tz ? '<button type="button" class="btn small" data-act="ok-tz">Restantes zonas do tornozelo e pé: sem sintomas</button>' : ''}${om ? '<button type="button" class="btn small" data-act="ok-om">Restantes zonas do ombro: sem sintomas</button>' : ''}${an ? '<button type="button" class="btn small" data-act="ok-an">Restantes zonas da anca: sem sintomas</button>' : ''}<button type="button" class="btn small" data-act="limpar-mapa">Limpar mapa</button></div></details>`;
+  h += `<div class="btnrow" style="margin-top:8px">${jo ? `<button type="button" class="btn small" data-act="ok-jo">Restantes zonas do joelho${S.meta.jo.anca === 'sim' ? ' e da anca' : ''}: sem sintomas</button>` : ''}${tz ? '<button type="button" class="btn small" data-act="ok-tz">Restantes zonas do tornozelo e pé: sem sintomas</button>' : ''}${om ? '<button type="button" class="btn small" data-act="ok-om">Restantes zonas do ombro: sem sintomas</button>' : ''}${an ? '<button type="button" class="btn small" data-act="ok-an">Restantes zonas da anca: sem sintomas</button>' : ''}${ativo('lo') ? '<button type="button" class="btn small" data-act="ok-lo">Restantes zonas lombares e do membro inferior: sem sintomas</button>' : ''}<button type="button" class="btn small" data-act="limpar-mapa">Limpar mapa</button></div></details>`;
 
   h += `<details class="sec"><summary>Síntese e hipóteses</summary><div class="fields">`;
   h += fld('Síntese do fisioterapeuta (linguagem simples, até cerca de 400 caracteres)', ta('plano.sintese', 4), 'full');
@@ -1700,6 +1889,7 @@ function atualizarCalc(){
   const cj = document.getElementById('calc-jo'); if(cj) cj.textContent = calcJoTxt();
   const co = document.getElementById('calc-om'); if(co) co.textContent = calcOmTxt();
   const ca = document.getElementById('calc-an'); if(ca) ca.textContent = calcAnTxt();
+  const cl = document.getElementById('calc-lo'); if(cl) cl.textContent = calcLoTxt();
 }
 
 /* ===================== Eventos ===================== */
@@ -1757,6 +1947,7 @@ function acao(act, d){
   if(act === 'ok-tz'){ marcarOk(ZONAS_TZ); mapaAberto = true; buildEditor(); agendar(); return; }
   if(act === 'ok-om'){ marcarOk(ZONAS_OM); mapaAberto = true; buildEditor(); agendar(); return; }
   if(act === 'ok-an'){ marcarOk(ZONAS_AN); mapaAberto = true; buildEditor(); agendar(); return; }
+  if(act === 'ok-lo'){ marcarOk(ZONAS_LO); mapaAberto = true; buildEditor(); agendar(); return; }
   if(act === 'foto'){ fotoAlvo = i; document.getElementById('fileFoto').value = ''; document.getElementById('fileFoto').click(); return; }
   if(act === 'sem-foto'){ S.plano.exercicios[i].foto = ''; buildEditor(); agendar(); return; }
   if(act === 'imprimir'){ render(); window.print(); return; }
@@ -1844,6 +2035,7 @@ function ligarExemplo(s, ligs, exs){
 }
 function exemplo(){
   const regs = MODELO.regioes;
+  if(regs.includes('lo')) return ligarExemplo(exemploLo(), [['p:rmdq','4'], ['lo:bs','[definir]'], ['p:nprsLo','2'], null], [0, 1, 1, 2]);
   if(regs.includes('an')) return ligarExemplo(exemploAn(), [['lsi:an_abd','90'], ['p:hoosDesp','[definir]'], ['t:rri','[definir]'], null], [0, 0, 0, 3]);
   if(regs.includes('jo')) return ligarExemplo(exemploJo(), [['lsi:kext','90'], null, ['p:tsk','[definir]'], null], [0, 0, 0, null, null, 1]);
   const s = garantirIds(exemploTzOm());
@@ -1866,6 +2058,34 @@ function exemplo(){
     s.plano.hipoteses = 'Instabilidade anterior do ombro D pós-luxação, sem apreensão em carga.';
     s.plano.proxTestes = 'Mesmos protocolos; rotações a 0°, CKCUEST e UQ-YBT; DASH e WOSI.';
   }
+  return s;
+}
+function exemploLo(){
+  const s = novoEstado(); s.exemplo = true;
+  s.meta.regioes = {jo:'nao', tz:'nao', om:'nao', an:'nao', lo:'sim'};
+  Object.assign(s.meta, {codigo:'FT-0005', modalidade:'Corrida'});
+  Object.assign(s.meta.lo, {perfil:'inesp', fase:'subaguda', lado:'D', tipoRef:'sintomas', dataRef:'2026-08-24'});
+  Object.assign(s.protocolo.lo, {posicao:'em pé, bacia fixa, cinta ao nível das omoplatas', posFlex:'sentado, joelhos a 90°, cinta ao nível do esterno'});
+  const a0 = novaAvaliacao(); a0.data = '2026-09-21'; a0.massa = '78';
+  a0.lo = {ext:['42,1','44,0','43,2'], flex:['30,5','31,2','29,8'], bs:'62', mcf:'70', pl:{E:'38', D:'44'}, slr:{E:'80', D:'55'}, slrR:{E:'neg', D:'pos'}, slrX:{E:'neg', D:''}, slump:{E:'neg', D:'pos'}, dch:'24', schober:'4,0', neuroR:'normal', neuro:''};
+  a0.proms = {rmdq:'12', sbst:'5', sbstPsi:'3', nprsLo:'6', nprsLoP:'4', eq5dPerfil:'12221', eq5dVas:'55'};
+  const a1 = novaAvaliacao(a0); a1.data = '2026-10-26';
+  a1.lo = {ext:['49,8','51,3','50,6'], flex:['33,9','34,6','34,1'], bs:'95', mcf:'88', pl:{E:'52', D:'55'}, slr:{E:'85', D:'75'}, slrR:{E:'neg', D:'pos'}, slrX:{E:'neg', D:''}, slump:{E:'neg', D:'neg'}, dch:'12', schober:'5,0', neuroR:'normal', neuro:''};
+  a1.proms = {rmdq:'6', sbst:'3', sbstPsi:'2', nprsLo:'3', nprsLoP:'1', eq5dPerfil:'11121', eq5dVas:'75', pgic:'6'};
+  s.avaliacoes = [a0, a1];
+  s.sintomas = {P_D_lombar:{e:'pri', tipo:'dor', nprs:'3'}, P_D_nadega:{e:'sec', tipo:'dor'}, P_D_coxa_post_p:{e:'sec', tipo:'parestesia'}, P_E_lombar:{e:'ok'}, P_D_gemeos:{e:'ok'}, P_D_pe:{e:'ok'}};
+  s.plano = {sintese:'Em 5 semanas, a dor lombar desceu de 6 para 3 em 10 e a dor na perna direita quase desapareceu. A força e a resistência dos músculos das costas melhoraram e as tarefas do dia a dia estão mais fáceis. O foco seguinte é voltar a correr de forma progressiva e tolerar mais tempo sentado.',
+    hipoteses:'Dor lombar inespecífica subaguda com componente de dor referida/irradiada à perna D (SLR D positivo a 55°→75°, sem défice neurológico); baixa tolerância à carga dos extensores.',
+    problemas:[{cif:'func', regiao:'', frase:'Dor nas costas ao fim do dia', tecnico:'Dor lombar mecânica', indicador:'NPRS 3/10'},
+      {cif:'func', regiao:'', frase:'Os músculos das costas cansam-se depressa', tecnico:'Baixa resistência dos extensores do tronco', indicador:'Biering-Sørensen 95 s'},
+      {cif:'ativ', regiao:'', frase:'Custa estar sentado mais de uma hora', tecnico:'Tolerância reduzida à posição de sentado', indicador:'RMDQ 6/24'},
+      {cif:'part', regiao:'', frase:'Ainda não voltou a correr', tecnico:'Restrição na participação desportiva', indicador:'—'}],
+    objetivos:[{texto:'Fazer o dia de trabalho sem ficar limitado pelas costas', prazo:'6 semanas', longo:''}, {texto:'Aguentar carregar as compras e o filho sem dor', prazo:'6 semanas', longo:''}, {texto:'Voltar a correr 5 km sem dor no dia seguinte', prazo:'3 meses', longo:'1'}],
+    exercicios:[{nome:'Ponte glútea com isometria', alvo:'Extensores da anca', d1:'3 × 10', d2:'5 s em cima', d3:'diário', progredir:'sem dor no dia seguinte', ajustar:'dor na perna > 3/10'},
+      {nome:'Extensão do tronco no banco romano', alvo:'Extensores do tronco', d1:'3 × 8', d2:'2 rep. de reserva', d3:'3×/semana', progredir:'aumentar carga 5–10%', ajustar:'dor no dia seguinte'},
+      {nome:'Ponte lateral', alvo:'Estabilizadores laterais do tronco', d1:'3 × 20 s', d2:'cada lado', d3:'3×/semana', progredir:'+5 s por série', ajustar:'dor lombar'},
+      {nome:'Marcha rápida progressiva', alvo:'Tolerância à carga', d1:'20–30 min', d2:'ritmo confortável', d3:'5×/semana', progredir:'introduzir corrida intervalada', ajustar:'dor na perna'}],
+    proxData:'2026-11-30', proxTestes:'Mesmos protocolos; força e resistência do tronco, SLR e slump; RMDQ e STarT Back.'};
   return s;
 }
 function exemploJo(){
@@ -2065,10 +2285,15 @@ const QD = {
   hoos:   {reg:'an', nome:'HOOS',    n:40, tipo:'likert', nop:5},
   nahs:   {reg:'an', nome:'NAHS',    n:20, tipo:'likert', nop:5},
   tsk:    {reg:'*',  nome:'TSK-13',  n:13, tipo:'likert', nop:4},
-  pgic:   {reg:'*',  nome:'PGIC',    n:1,  tipo:'likert', nop:7, reav:true}
+  pgic:   {reg:'*',  nome:'PGIC',    n:1,  tipo:'likert', nop:7, reav:true},
+  rmdq:   {reg:'lo', nome:'RMDQ',       n:24, tipo:'likert', nop:2},
+  sbst:   {reg:'lo', nome:'STarT Back', n:9,  tipo:'likert', nops:[2,2,2,2,2,2,2,2,5]},
+  eq5d:   {reg:'lo', nome:'EQ-5D-3L',   n:6,  tipo:'likert', nops:[3,3,3,3,3], vas:[5]}
 };
+const nopItem = (q, i) => QD[q].nops ? QD[q].nops[i] : QD[q].nop;
+const vasItem = (q, i) => QD[q].tipo === 'vas100' || !!(QD[q].vas && QD[q].vas.includes(i));
 /* pontuações apresentadas sem casas decimais */
-const PROM_INT = ['wosi', 'lefs', 'tsk', 'pgic'];
+const PROM_INT = ['wosi', 'lefs', 'tsk', 'pgic', 'rmdq', 'sbst', 'sbstPsi', 'eq5dVas', 'sbstRisco'];
 const COD = {
   koos: [...[1,2,3,4,5,6,7].map(i => 'S' + i), ...[1,2,3,4,5,6,7,8,9].map(i => 'P' + i), ...Array.from({length:17}, (_, i) => 'A' + (i+1)), ...[1,2,3,4,5].map(i => 'SP' + i), ...[1,2,3,4].map(i => 'Q' + i)],
   lefs: Array.from({length:20}, (_, i) => String(i+1)),
@@ -2080,7 +2305,10 @@ const COD = {
   hoos: [...[1,2,3,4,5].map(i => 'S' + i), ...Array.from({length:10}, (_, i) => 'P' + (i+1)), ...Array.from({length:17}, (_, i) => 'A' + (i+1)), ...[1,2,3,4].map(i => 'SP' + i), ...[1,2,3,4].map(i => 'Q' + i)],
   nahs: [...[1,2,3,4,5].map(i => 'D' + i), ...[1,2,3,4].map(i => 'S' + i), ...[1,2,3,4,5].map(i => 'F' + i), ...[1,2,3,4,5,6].map(i => 'A' + i)],
   tsk: Array.from({length:13}, (_, i) => String(i+1)),
-  pgic: ['1']
+  pgic: ['1'],
+  rmdq: Array.from({length:24}, (_, i) => String(i+1)),
+  sbst: Array.from({length:9}, (_, i) => String(i+1)),
+  eq5d: ['Mobilidade', 'Cuidados pessoais', 'Actividades habituais', 'Dor/mal-estar', 'Ansiedade/depressão', 'EQ VAS']
 };
 let TEXTOS = {};
 function parseQ(q){
@@ -2097,7 +2325,7 @@ function parseQ(q){
 function validarQ(q){
   const it = parseQ(q).filter(x => !x.h), d = QD[q], err = [];
   if(it.length !== d.n) err.push(`${it.length} de ${d.n} itens`);
-  if(d.tipo === 'likert'){ const bad = it.filter(x => x.ops.length !== d.nop).length; if(bad) err.push(`${bad} itens sem ${d.nop} opções de resposta`); }
+  if(d.tipo === 'likert'){ const bad = it.filter((x, i) => !vasItem(q, i) && x.ops.length !== nopItem(q, i)).length; if(bad) err.push(`${bad} itens sem o número de opções de resposta previsto`); const bv = it.filter((x, i) => vasItem(q, i) && x.ops.length !== 2).length; if(bv) err.push(`${bv} itens sem as 2 âncoras (início; fim)`); }
   else { const bad = it.filter(x => x.ops.length !== 2).length; if(bad) err.push(`${bad} itens sem as 2 âncoras (início; fim)`); }
   return err;
 }
@@ -2131,6 +2359,12 @@ function cotar(q, r){
   if(q === 'tsk'){ return {tsk: v.every(ok) ? v.reduce((s, x) => s + x + 1, 0) : null}; }
   /* PGIC PT-PT (Domingues & Cruz 2011): uma pergunta, 1–7 pela ordem impressa */
   if(q === 'pgic'){ return {pgic: ok(v[0]) ? v[0] + 1 : null}; }
+  /* RMDQ PT-PT (Monteiro et al., Acta Med Port 2010): 1 ponto por «Sim»; 0–24; só com os 24 itens */
+  if(q === 'rmdq'){ return {rmdq: v.every(ok) ? v.filter(x => x === 0).length : null}; }
+  /* STarT Back: Q1–8 0/1; Q9 Nenhum/Pouco/Moderado 0, Muito/Extremo 1; total ≤ 3 baixo; ≥ 4 com Q5–9 ≤ 3 médio, ≥ 4 alto */
+  if(q === 'sbst'){ if(!v.every(ok)) return {sbst:null, sbstPsi:null, sbstRisco:null}; const p = v.map((x, i) => i < 8 ? x : (x >= 3 ? 1 : 0)), tot = p.reduce((s, x) => s + x, 0), psi = p.slice(4).reduce((s, x) => s + x, 0); return {sbst:tot, sbstPsi:psi, sbstRisco: tot <= 3 ? 0 : (psi <= 3 ? 1 : 2)}; }
+  /* EQ-5D-3L: perfil de 5 dígitos + EQ VAS; índice não calculado */
+  if(q === 'eq5d'){ const perf = v.slice(0, 5); return {eq5dPerfil: perf.every(ok) ? perf.map(x => x + 1).join('') : null, eq5dVas: ok(v[5]) ? v[5] : null}; }
   if(q === 'alrrsi'){ return {alrrsi: v.every(ok) ? v.reduce((s, x) => s + x, 0) / 120 * 100 : null}; }
   return {};
 }
@@ -2153,7 +2387,17 @@ const TS = {
   cst:    {reg:'an', nome:'Levantar e sentar em 30 s', sec:'pe'},
   rri:    {reg:'an', nome:'Rotação interna da anca a 90°', sec:'marquesa'},
   rre:    {reg:'an', nome:'Rotação externa da anca a 90°', sec:'marquesa'},
-  sq:     {reg:'an', nome:'Squeeze dos adutores a 45°', sec:'marquesa'}
+  sq:     {reg:'an', nome:'Squeeze dos adutores a 45°', sec:'marquesa'},
+  nprsLo: {reg:'lo', nome:'Dor lombar e na perna (NPRS)', sec:'inicio'},
+  lo_mob: {reg:'lo', nome:'Mobilidade lombar (dedos-chão, Schober)', sec:'pe'},
+  lo_neuro:{reg:'lo', nome:'Rastreio neurológico', sec:'marquesa'},
+  lo_slr: {reg:'lo', nome:'Elevação da perna estendida (SLR)', sec:'marquesa'},
+  lo_slump:{reg:'lo', nome:'Slump test', sec:'marquesa'},
+  lo_ext: {reg:'lo', nome:'Lombar · extensores do tronco (kgf)', sec:'marquesa'},
+  lo_flex:{reg:'lo', nome:'Lombar · flexores do tronco (kgf)', sec:'marquesa'},
+  lo_bs:  {reg:'lo', nome:'Biering-Sørensen', sec:'marquesa'},
+  lo_mcf: {reg:'lo', nome:'Resistência dos flexores (McGill)', sec:'marquesa'},
+  lo_pl:  {reg:'lo', nome:'Ponte lateral (McGill)', sec:'marquesa'}
 };
 for(const g in FG) TS[g] = {reg:FG[g].reg, nome:`${REG[FG[g].reg]} · ${FG[g].nome}`, sec:'marquesa', forca:true};
 function tsRegs(d){ return d.regs || [d.reg]; }
@@ -2167,9 +2411,12 @@ const BAT = {
   om_tardia: {reg:'om', nome:'Ombro · instabilidade, fase tardia',    t:['nprsOm','om_re0','om_ri0','ck','uq'], q:['dash']},
   an_base:   {reg:'an', nome:'Anca · avaliação de base',              t:['nprsAn','an_abd','an_add','an_ext','an_flex'], q:[]},
   an_desp:   {reg:'an', nome:'Anca · desportista',                    t:['nprsAn','an_abd','an_add','an_ext','an_flex','an_re','an_ri','rri','rre','sq','sebt','hop'], q:[]},
-  an_oa:     {reg:'an', nome:'Anca · osteoartrose',                   t:['nprsAn','an_abd','an_add','an_ext','an_flex','rri','rre','cst'], q:[]}
+  an_oa:     {reg:'an', nome:'Anca · osteoartrose',                   t:['nprsAn','an_abd','an_add','an_ext','an_flex','rri','rre','cst'], q:[]},
+  lo_base:   {reg:'lo', nome:'Lombar · avaliação de base',            t:['nprsLo','lo_mob','lo_neuro','lo_slr','lo_slump','lo_ext','lo_bs'], q:['rmdq','sbst']},
+  lo_rad:    {reg:'lo', nome:'Lombar · com sintomas na perna',        t:['nprsLo','lo_mob','lo_neuro','lo_slr','lo_slump'], q:['rmdq','sbst']},
+  lo_cap:    {reg:'lo', nome:'Lombar · capacidade física completa',   t:['nprsLo','lo_mob','lo_ext','lo_flex','lo_bs','lo_mcf','lo_pl'], q:['rmdq','sbst','eq5d']}
 };
-const BAT_DEF = {jo:'jo_base', tz:'tz_ini', om:'om_instab', an:'an_base'};
+const BAT_DEF = {jo:'jo_base', tz:'tz_ini', om:'om_instab', an:'an_base', lo:'lo_base'};
 const SEC = [['inicio','1 · Antes de começar'],['pe','2 · Em pé'],['saltos','3 · Saltos'],['carga','4 · Ombro em carga'],['marquesa','5 · Marquesa · dinamometria']];
 const NR = [['','Realizado'],['dor','Não realizado · dor'],['apreensao','Não realizado · apreensão'],['contra','Não realizado · não indicado'],['outro','Não realizado · outro motivo']];
 const NR_TXT = {dor:'dor', apreensao:'apreensão', contra:'não indicado', outro:'outro motivo'};
@@ -2222,6 +2469,10 @@ function verificacao(ai){
     if(testeAtivo(a, 'sebt') && !(num(S.meta.tz.compE) && num(S.meta.tz.compD))) f.push('Comprimento do membro inferior E e D (SEBT)');
     if(GR('tz').some(g => testeAtivo(a, g)) && !S.protocolo.tz.joelho) f.push('Posição do joelho na dinamometria do tornozelo');
   }
+  if(ativo('lo')){
+    if(!S.meta.lo.dataRef) f.push('Lombar: data de referência');
+    if(['lo_ext','lo_flex'].some(id => testeAtivo(a, id) && !(a.nr || {})[id]) && num(a.massa) == null && !forcaAtiva) f.push('Massa corporal (para % do peso)');
+  }
   if(ativo('om')){
     if(!S.meta.om.lado) f.push('Ombro: lado envolvido');
     if(!S.meta.om.dominante) f.push('Ombro: membro dominante');
@@ -2242,6 +2493,14 @@ function verificacao(ai){
     else if(id === 'nprsTz') ok = promVal(a, 'nprsTzD') != null;
     else if(id === 'nprsOm') ok = promVal(a, 'nprsOm') != null;
     else if(id === 'nprsAn') ok = promVal(a, 'nprsAn') != null;
+    else if(id === 'nprsLo') ok = promVal(a, 'nprsLo') != null;
+    else if(id === 'lo_mob') ok = loN(a, 'dch') != null || loN(a, 'schober') != null;
+    else if(id === 'lo_neuro') ok = !!LO(a).neuroR;
+    else if(id === 'lo_slr') ok = ['E','D'].every(s => LO(a).slrR && LO(a).slrR[s]);
+    else if(id === 'lo_slump') ok = ['E','D'].every(s => LO(a).slump && LO(a).slump[s]);
+    else if(id === 'lo_ext' || id === 'lo_flex') ok = !!loF(a, id.slice(3));
+    else if(id === 'lo_bs' || id === 'lo_mcf') ok = loN(a, id.slice(3)) != null;
+    else if(id === 'lo_pl') ok = loED(a, 'pl', 'E') != null && loED(a, 'pl', 'D') != null;
     else if(id === 'sq') ok = sqVals(a).length >= 1;
     else if(id === 'cst') ok = num(t.cst) != null;
     else if(id === 'sebt') ok = ['ant','pm','pl'].every(d => temED(t.sebt && t.sebt[d]));
@@ -2252,7 +2511,7 @@ function verificacao(ai){
     else ok = temED(t[id]);
     if(!ok) f.push(`${TS[id].nome}: valores em falta ou marcar "não realizado"`);
   }
-  const chaves = {koos:['koosDor'], lefs:['lefs'], faos:['faosDor'], faam:['faamAvd','faamDesp'], alrrsi:['alrrsi'], wosi:['wosi'], dash:['dash'], tsk:['tsk'], pgic:['pgic'], hoos:['hoosDor'], nahs:['nahs']};
+  const chaves = {koos:['koosDor'], lefs:['lefs'], faos:['faosDor'], faam:['faamAvd','faamDesp'], alrrsi:['alrrsi'], wosi:['wosi'], dash:['dash'], tsk:['tsk'], pgic:['pgic'], hoos:['hoosDor'], nahs:['nahs'], rmdq:['rmdq'], sbst:['sbst'], eq5d:['eq5dVas']};
   for(const q in QD) if(questAtivo(a, q) && chaves[q].some(k => promVal(a, k) == null)) f.push(`Questionário ${QD[q].nome} por preencher`);
   return f;
 }
@@ -2273,6 +2532,7 @@ function calcSessao(id){
     const l = lsiT(a, id); if(l != null) p.push(L(l));
     return p.join(' · ');
   }
+  if(id === 'lo_ext' || id === 'lo_flex' || id === 'lo_pl' || id === 'lo_mcf' || id === 'lo_bs') return calcLoTxt();
   if(id === 'ck'){ const m = ckMean(a); return m != null ? `média ${fmt(m,1)} toques` : ''; }
   if(id === 'sq'){ const m = sqMax(a); return m != null ? `máx. ${fmt(m,1)} kgf` : ''; }
   if(id === 'rri' || id === 'rre'){ const e = tv(a, id, 'E'), d = tv(a, id, 'D'); return e != null && d != null ? `diferença ${inv('an')}−${non('an')} ${fmtSigned(tv(a, id, inv('an')) - tv(a, id, non('an')),0)}°` : ''; }
@@ -2292,6 +2552,14 @@ function cartaoTeste(id, corpo){
 }
 function corpoTeste(id){
   const ap = `avaliacoes.${tab}`, a = S.avaliacoes[tab];
+  if(id === 'nprsLo') return `<div class="ed2"><label>NPRS 0–10 · dor lombar, pior na última semana</label><div class="ed2-in">${inp(ap + '.proms.nprsLo', 'inputmode="decimal" aria-label="NPRS lombar"')}</div></div><div class="ed2"><label>NPRS 0–10 · dor na perna, pior na última semana</label><div class="ed2-in">${inp(ap + '.proms.nprsLoP', 'inputmode="decimal" aria-label="NPRS na perna"')}</div></div>`;
+  if(id === 'lo_mob') return `<div class="ed2"><label>Distância dedos-chão (cm) · Schober modificado (cm)</label><div class="ed2-in">${inp(ap + '.lo.dch', 'inputmode="decimal" aria-label="Dedos-chão"')}${inp(ap + '.lo.schober', 'inputmode="decimal" aria-label="Schober"')}</div></div>`;
+  if(id === 'lo_neuro') return `<div class="ed2"><label>Miótomos, reflexos, sensibilidade</label><div class="ed2-in">${sel(ap + '.lo.neuroR', [['','—'],['normal','Sem alterações'],['alt','Alterado']])}</div><div class="ed2-in">${inp(ap + '.lo.neuro', 'placeholder="achados" aria-label="Achados neurológicos"')}</div></div>`;
+  if(id === 'lo_slr') return campoED(ap + '.lo.slr', 'Ângulo ao início dos sintomas (°)', 'inputmode="numeric"') + `<div class="ed2"><label>Resultado</label><div class="ed2-in"><span>E</span>${sel(ap + '.lo.slrR.E', [['','—'],['neg','Neg.'],['pos','Pos.']])}<span>D</span>${sel(ap + '.lo.slrR.D', [['','—'],['neg','Neg.'],['pos','Pos.']])}</div></div><div class="ed2"><label>SLR cruzado</label><div class="ed2-in"><span>E</span>${sel(ap + '.lo.slrX.E', [['','—'],['neg','Neg.'],['pos','Pos.']])}<span>D</span>${sel(ap + '.lo.slrX.D', [['','—'],['neg','Neg.'],['pos','Pos.']])}</div></div>`;
+  if(id === 'lo_slump') return `<div class="ed2"><label>Resultado</label><div class="ed2-in"><span>E</span>${sel(ap + '.lo.slump.E', [['','—'],['neg','Neg.'],['pos','Pos.']])}<span>D</span>${sel(ap + '.lo.slump.D', [['','—'],['neg','Neg.'],['pos','Pos.']])}</div></div>`;
+  if(id === 'lo_ext' || id === 'lo_flex'){ const k = id.slice(3); return `<div class="ed2"><label>Tentativas (kgf)</label><div class="ed2-in">${Array.from({length:nT('lo')}, (_, t) => inp(`${ap}.lo.${k}.${t}`, 'inputmode="decimal" aria-label="' + esc(TS[id].nome + ' ' + (t+1)) + '"')).join('')}</div></div>`; }
+  if(id === 'lo_bs' || id === 'lo_mcf') return `<div class="ed2"><label>Tempo até à falha (s)</label><div class="ed2-in">${inp(ap + '.lo.' + id.slice(3), 'inputmode="decimal" aria-label="' + esc(TS[id].nome) + '"')}</div></div>`;
+  if(id === 'lo_pl') return campoED(ap + '.lo.pl', 'Tempo até à falha (s)');
   if(id === 'nprsJo') return `<div class="ed2"><label>NPRS 0–10 · pior dor na última semana</label><div class="ed2-in">${inp(ap + '.proms.nprsJo', 'inputmode="decimal" aria-label="NPRS do joelho"')}</div></div>`;
   if(id === 'nprsTz') return `<div class="ed2"><label>NPRS 0–10 · no desporto</label><div class="ed2-in">${inp(ap + '.proms.nprsTzD', 'inputmode="decimal" aria-label="NPRS no desporto"')}</div></div><div class="ed2"><label>NPRS 0–10 · nas últimas 24 h</label><div class="ed2-in">${inp(ap + '.proms.nprsTz24', 'inputmode="decimal" aria-label="NPRS nas últimas 24 h"')}</div></div>`;
   if(id === 'nprsAn') return `<div class="ed2"><label>NPRS 0–10 · pior dor na última semana</label><div class="ed2-in">${inp(ap + '.proms.nprsAn', 'inputmode="decimal" aria-label="NPRS da anca"')}</div></div>`;
@@ -2327,6 +2595,7 @@ function renderSessao(){
   if(ativo('jo')) h += fld('Joelho', sel(ap + '.bat.jo', Object.entries(BAT).filter(([, p]) => p.reg === 'jo').map(([k, p]) => [k, p.nome]), 'data-bat="1"'));
   if(ativo('tz')) h += fld('Tornozelo', sel(ap + '.bat.tz', Object.entries(BAT).filter(([, p]) => p.reg === 'tz').map(([k, p]) => [k, p.nome]), 'data-bat="1"'));
   if(ativo('an')) h += fld('Anca', sel(ap + '.bat.an', Object.entries(BAT).filter(([, p]) => p.reg === 'an').map(([k, p]) => [k, p.nome]), 'data-bat="1"'));
+  if(ativo('lo')) h += fld('Lombar', sel(ap + '.bat.lo', Object.entries(BAT).filter(([, p]) => p.reg === 'lo').map(([k, p]) => [k, p.nome]), 'data-bat="1"'));
   if(ativo('om')) h += fld('Ombro', sel(ap + '.bat.om', Object.entries(BAT).filter(([, p]) => p.reg === 'om').map(([k, p]) => [k, p.nome]), 'data-bat="1"'));
   h += `</div><div class="chips">`;
   for(const id in TS) if(regOk(TS[id]) && (!TS[id].forca || GRV(FG[id].reg).includes(id))) h += `<label class="chipck${b.t[id] ? ' on' : ''}"><input type="checkbox" data-bt="${id}"${b.t[id] ? ' checked' : ''}>${esc(TS[id].nome)}</label>`;
@@ -2338,7 +2607,7 @@ function renderSessao(){
     if(!ids.length && !qs.length) continue;
     h += `<h3 class="sc-sec">${st}</h3><div class="sc-grid">`;
     if(qs.length){
-      const est = qs.map(q => { const k = {koos:'koosDor', lefs:'lefs', faos:'faosDor', faam:'faamAvd', alrrsi:'alrrsi', wosi:'wosi', dash:'dash', tsk:'tsk', pgic:'pgic', hoos:'hoosDor', nahs:'nahs'}[q]; return `${QD[q].nome}: ${promVal(a, k) != null ? 'preenchido' : 'por preencher'}`; }).join(' · ');
+      const est = qs.map(q => { const k = {koos:'koosDor', lefs:'lefs', faos:'faosDor', faam:'faamAvd', alrrsi:'alrrsi', wosi:'wosi', dash:'dash', tsk:'tsk', pgic:'pgic', hoos:'hoosDor', nahs:'nahs', rmdq:'rmdq', sbst:'sbst', eq5d:'eq5dVas'}[q]; return `${QD[q].nome}: ${promVal(a, k) != null ? 'preenchido' : 'por preencher'}`; }).join(' · ');
       h += `<div class="sc"><div class="sc-h"><span class="sc-t">Questionários</span></div><div class="sc-c" style="color:var(--ink2)">${esc(est)}</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"><button class="btn" type="button" data-sa="utente">Entregar ao utente</button>${qs.filter(q => !validarQ(q).length).map(q => `<button class="btn" type="button" data-papel="${q}">${esc(QD[q].nome)} em papel</button>`).join('')}</div></div>`;
     }
     for(const id of ids) h += cartaoTeste(id, corpoTeste(id));
@@ -2457,7 +2726,7 @@ function importarRespostas(o){
     if(QD[q].reav && ai === 0){ res.push(`${QD[q].nome}: só se aplica em reavaliações; não foi importada para a avaliação inicial`); continue; }
     a.resp[q] = {r, data:o.questionarios[q].data || o.data, origem:'iPad'};
     const sc = cotar(q, r);
-    for(const k in sc){ const d = PROM_INT.includes(k) ? 0 : 1; if(sc[k] != null) a.proms[k] = fmt(sc[k], d); res.push(`${PROMS[k] ? PROMS[k].leg.replace(' †', '') : QD[k] ? QD[k].nome : k}: ${sc[k] != null ? fmt(sc[k], d) : 'não cotável (itens em falta)'}`); }
+    for(const k in sc){ const d = PROM_INT.includes(k) ? 0 : 1; if(sc[k] != null) a.proms[k] = typeof sc[k] === 'string' ? sc[k] : fmt(sc[k], d); res.push(`${PROMS[k] ? PROMS[k].leg.replace(' †', '') : QD[k] ? QD[k].nome : (ROTQ[k] || k)}: ${sc[k] != null ? fmtQ(k, sc[k], d) : 'não cotável (itens em falta)'}`); }
     if(!qRegOk(q)) res.push(`(${QD[q].nome} é de uma região que não está neste relatório: fica guardado, mas não aparece)`);
   }
   tab = ai; dirty = true; buildEditor(); agendar();
@@ -2490,7 +2759,7 @@ function abrirTranscricao(q){
   const prev = a.resp && a.resp[q] && Array.isArray(a.resp[q].r) && a.resp[q].r.length === QD[q].n ? a.resp[q].r.slice() : new Array(QD[q].n).fill(null);
   TR = {q, r:prev}; renderTranscricao();
 }
-function trCotacao(){ const sc = cotar(TR.q, TR.r); return Object.keys(sc).map(k => `${PROMS[k] ? PROMS[k].leg.replace(' †', '') : (QD[k] ? QD[k].nome : k)} ${sc[k] != null ? fmt(sc[k], PROM_INT.includes(k) ? 0 : 1) : '—'}`).join(' · '); }
+function trCotacao(){ const sc = cotar(TR.q, TR.r); return Object.keys(sc).map(k => `${PROMS[k] ? PROMS[k].leg.replace(' †', '') : (QD[k] ? QD[k].nome : (ROTQ[k] || k))} ${sc[k] != null ? fmtQ(k, sc[k], PROM_INT.includes(k) ? 0 : 1) : '—'}`).join(' · '); }
 function renderTranscricao(){
   let el = document.getElementById('transcr');
   if(!TR){ if(el) el.remove(); return; }
@@ -2502,7 +2771,7 @@ function renderTranscricao(){
   for(const x of parseQ(q)){
     if(x.h){ h += `<h3 class="sc-sec">${esc(x.h)}</h3>`; continue; }
     i++;
-    const ops = d.tipo === 'likert' ? x.ops.map((o, k) => `<button type="button" class="tr-op${TR.r[i] === k ? ' on' : ''}" data-tr="r" data-i="${i}" data-v="${k}">${esc(o)}</button>`).join('')
+    const ops = d.tipo === 'likert' && !vasItem(q, i) ? x.ops.map((o, k) => `<button type="button" class="tr-op${TR.r[i] === k ? ' on' : ''}" data-tr="r" data-i="${i}" data-v="${k}">${esc(o)}</button>`).join('')
       : `<input type="number" min="0" max="${d.tipo === 'escala10' ? 10 : 100}" step="1" value="${TR.r[i] ?? ''}" data-tr-n="${i}" aria-label="${esc(cods[i] || String(i + 1))}" style="max-width:110px"><span class="r-muted">${esc((x.ops[0] || '') + ' … ' + (x.ops[1] || ''))}</span>`;
     h += `<div class="tr-row"><span class="tr-c">${esc(cods[i] || String(i + 1))}</span><span class="tr-t">${esc(x.txt)}</span><span class="tr-ops">${ops}</span></div>`;
   }
@@ -2519,7 +2788,7 @@ document.addEventListener('click', ev => {
     if(QD[q].reav && tab === 0){ alert(`${QD[q].nome}: só se aplica em reavaliações.`); return; }
     a.resp[q] = {r:TR.r.slice(), data:a.data || new Date().toISOString().slice(0, 10), origem:'papel'};
     const sc = cotar(q, TR.r), res = [];
-    for(const k in sc){ const dd = PROM_INT.includes(k) ? 0 : 1; if(sc[k] != null) a.proms[k] = fmt(sc[k], dd); res.push(`${PROMS[k] ? PROMS[k].leg.replace(' †', '') : (QD[k] ? QD[k].nome : k)}: ${sc[k] != null ? fmt(sc[k], dd) : 'não cotável (itens em falta)'}`); }
+    for(const k in sc){ const dd = PROM_INT.includes(k) ? 0 : 1; if(sc[k] != null) a.proms[k] = typeof sc[k] === 'string' ? sc[k] : fmt(sc[k], dd); res.push(`${PROMS[k] ? PROMS[k].leg.replace(' †', '') : (QD[k] ? QD[k].nome : (ROTQ[k] || k))}: ${sc[k] != null ? fmtQ(k, sc[k], dd) : 'não cotável (itens em falta)'}`); }
     TR = null; renderTranscricao(); dirty = true; buildEditor(); agendar(); atualizarSessao();
     alert('Registado nesta avaliação:\n' + res.join('\n'));
   }
@@ -2561,7 +2830,7 @@ function renderUtente(){
     } else {
       const it = itensUT(q)[UT.ii], v = UT.resp[q][UT.ii], tit = tituloAntes(q, UT.ii);
       h += `<p class="ut-q">${d.nome} · pergunta ${UT.ii + 1} de ${d.n}</p>${tit ? `<p class="ut-sec">${esc(tit)}</p>` : ''}<h2>${esc(it.txt)}</h2>`;
-      if(d.tipo === 'likert'){
+      if(d.tipo === 'likert' && !vasItem(q, UT.ii)){
         h += `<div class="ut-ops">${it.ops.map((o, i) => `<button type="button" class="ut-op${v === i ? ' on' : ''}" data-ut="r" data-v="${i}">${esc(o)}</button>`).join('')}</div>`;
       } else if(d.tipo === 'escala10'){
         h += `<div class="ut-esc">${Array.from({length:11}, (_, i) => `<button type="button" class="ut-n${v === i ? ' on' : ''}" data-ut="r" data-v="${i}">${i}</button>`).join('')}</div><div class="ut-anc"><span>${esc(it.ops[0] || '')}</span><span>${esc(it.ops[1] || '')}</span></div>`;
@@ -2579,7 +2848,7 @@ function terminarUtente(){
   for(const q of UT.lista){
     a.resp[q] = {r:UT.resp[q], data:new Date().toISOString().slice(0, 10)};
     const sc = cotar(q, UT.resp[q]);
-    for(const k in sc){ const d = PROM_INT.includes(k) ? 0 : 1; if(sc[k] != null){ a.proms[k] = fmt(sc[k], d); } res.push(`${PROMS[k] ? PROMS[k].leg.replace(' †','') : QD[k] ? QD[k].nome : k}: ${sc[k] != null ? fmt(sc[k], d) : 'não cotável (itens em falta)'}`); }
+    for(const k in sc){ const d = PROM_INT.includes(k) ? 0 : 1; if(sc[k] != null){ a.proms[k] = typeof sc[k] === 'string' ? sc[k] : fmt(sc[k], d); } res.push(`${PROMS[k] ? PROMS[k].leg.replace(' †','') : QD[k] ? QD[k].nome : (ROTQ[k] || k)}: ${sc[k] != null ? fmtQ(k, sc[k], d) : 'não cotável (itens em falta)'}`); }
   }
   UT.fim = true; UT.resultado = res; dirty = true;
   renderUtente(); buildEditor(); agendar(); atualizarSessao();
